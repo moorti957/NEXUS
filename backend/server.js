@@ -197,42 +197,52 @@ app.use(helmet({
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", "data:", "https:"],
       scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-      connectSrc: ["'self'", process.env.FRONTEND_URL || "http://localhost:5173"],
+      connectSrc: [
+  "'self'",
+  process.env.FRONTEND_URL || "http://localhost:5173",
+  "https://nexus-v401.onrender.com" // 👈 ADD THIS
+],
     },
   },
   crossOriginEmbedderPolicy: false,
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
-const allowedOrigins = process.env.FRONTEND_URL
-  ? process.env.FRONTEND_URL.split(',')
-  : [
-      'http://localhost:5173',
-      'http://localhost:3000',
-      'https://nexus-e7pq4c6r6-dipanshus-projects-ad8d55d0.vercel.app' // 👈 ADD THIS
-    ];
 
 app.use(cors({
-  origin: function (origin, callback) {
-    // allow requests with no origin (postman, mobile apps)
-    if (!origin) return callback(null, true);
-
-    // allow all vercel domains (IMPORTANT 🔥)
-    if (origin.includes('vercel.app')) {
-      return callback(null, true);
-    }
-
-    if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      console.log("❌ Blocked by CORS:", origin);
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  origin: true,
+  credentials: true
 }));
+
+// const allowedOrigins = process.env.FRONTEND_URL
+//   ? process.env.FRONTEND_URL.split(',')
+//   : [
+//       'http://localhost:5173',
+//       'http://localhost:3000',
+//       'https://nexus-e7pq4c6r6-dipanshus-projects-ad8d55d0.vercel.app' // 👈 ADD THIS
+//     ];
+
+// app.use(cors({
+//   origin: function (origin, callback) {
+//     // allow requests with no origin (postman, mobile apps)
+//     if (!origin) return callback(null, true);
+
+//     // allow all vercel domains (IMPORTANT 🔥)
+//     if (origin.includes('vercel.app')) {
+//       return callback(null, true);
+//     }
+
+//     if (allowedOrigins.includes(origin)) {
+//       callback(null, true);
+//     } else {
+//       console.log("❌ Blocked by CORS:", origin);
+//       callback(new Error("Not allowed by CORS"));
+//     }
+//   },
+//   credentials: true,
+//   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+//   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+// }));
 
 // Rate limiting
 const limiter = rateLimit({
