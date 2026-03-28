@@ -209,18 +209,24 @@ const allowedOrigins = process.env.FRONTEND_URL
   : [
       'http://localhost:5173',
       'http://localhost:3000',
-      'https://your-vercel-app.vercel.app'
+      'https://nexus-e7pq4c6r6-dipanshus-projects-ad8d55d0.vercel.app' // 👈 ADD THIS
     ];
 
 app.use(cors({
   origin: function (origin, callback) {
-    // allow requests with no origin (like mobile apps, postman)
+    // allow requests with no origin (postman, mobile apps)
     if (!origin) return callback(null, true);
+
+    // allow all vercel domains (IMPORTANT 🔥)
+    if (origin.includes('vercel.app')) {
+      return callback(null, true);
+    }
 
     if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      callback(new Error("❌ Not allowed by CORS: " + origin));
+      console.log("❌ Blocked by CORS:", origin);
+      callback(new Error("Not allowed by CORS"));
     }
   },
   credentials: true,
