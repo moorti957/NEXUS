@@ -427,19 +427,19 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
-// ===========================================
-// 404 HANDLER
-// ===========================================
+
+
+// ✅ पहले root route
+app.get("/", (req, res) => {
+  res.send("🚀 Backend is LIVE and running");
+});
+
+// ❌ 404 हमेशा सबसे LAST में होना चाहिए
 app.use('*', (req, res) => {
   res.status(404).json({
     success: false,
     message: `Cannot ${req.method} ${req.originalUrl}`,
-    requestedAt: new Date().toISOString(),
   });
-});
-
-app.get("/", (req, res) => {
-  res.send("🚀 Backend is LIVE and running");
 });
 
 // ===========================================
