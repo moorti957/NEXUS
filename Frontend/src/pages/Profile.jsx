@@ -56,7 +56,7 @@ export default function Profile() {
   );
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
-   const BASE_URL = "http://localhost:5000";
+   const BASE_URL = import.meta.env.VITE_API_URL;
 
 const [avatarPreview, setAvatarPreview] = useState(
   user?.avatar ? `${BASE_URL}${user.avatar}` : ''
@@ -134,7 +134,7 @@ const [avatarPreview, setAvatarPreview] = useState(
       });
 
    setAvatarPreview(
-  userData.avatar ? `http://localhost:5000${userData.avatar}` : ''
+  userData.avatar ? `${BASE_URL}${userData.avatar}` : ''
 );
       updateProfile(userData);
 
@@ -203,7 +203,7 @@ const [avatarPreview, setAvatarPreview] = useState(
     try {
       const data = await uploadAvatar(file);
 
-setAvatarPreview(`http://localhost:5000${data.data.avatar}`);
+setAvatarPreview(`${BASE_URL}${data.data.avatar}`);
 
 updateProfile({ ...user, avatar: data.data.avatar });
       toast.success('Avatar uploaded successfully');

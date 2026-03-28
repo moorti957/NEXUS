@@ -12,7 +12,7 @@
     const [scrolled, setScrolled] = useState(false);
     const dropdownRef = useRef(null);
     const [chatNotifications, setChatNotifications] = useState([]);
-    const BASE_URL = "http://localhost:5000";
+    const BASE_URL = import.meta.env.VITE_API_URL;
 
 
    useEffect(() => {

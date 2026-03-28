@@ -204,14 +204,28 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
-// Enable CORS
+const allowedOrigins = process.env.FRONTEND_URL
+  ? process.env.FRONTEND_URL.split(',')
+  : [
+      'http://localhost:5173',
+      'http://localhost:3000',
+      'https://your-vercel-app.vercel.app'
+    ];
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL?.split(',') || ['http://localhost:5173', 'http://localhost:3000'],
+  origin: function (origin, callback) {
+    // allow requests with no origin (like mobile apps, postman)
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("❌ Not allowed by CORS: " + origin));
+    }
+  },
   credentials: true,
-  optionsSuccessStatus: 200,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  exposedHeaders: ['Content-Range', 'X-Content-Range'],
 }));
 
 // Rate limiting

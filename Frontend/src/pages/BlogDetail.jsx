@@ -10,6 +10,7 @@ export default function BlogDetail() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { showToast } = useToast();
+  const BASE_URL = `${import.meta.env.VITE_API_URL}/api`;
 
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -56,7 +57,7 @@ export default function BlogDetail() {
     setLoading(true);
     setError(false);
     try {
-      const res = await fetch(`http://localhost:5000/api/posts/${id}`);
+      const res = await fetch(`${BASE_URL}/posts/${id}`);
       if (!res.ok) {
         throw new Error('Post not found');
       }
@@ -85,12 +86,12 @@ export default function BlogDetail() {
     const token = user?.token || localStorage.getItem('token');
 
     try {
-      const res = await fetch(`http://localhost:5000/api/posts/like/${id}`, {
-        method: 'PUT',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+   const res = await fetch(`${BASE_URL}/posts/like/${id}`, {
+  method: 'PUT',
+  headers: {
+    Authorization: `Bearer ${token}`,
+  },
+});
 
       const updated = await res.json();
 
@@ -135,14 +136,14 @@ export default function BlogDetail() {
   const token = user?.token || localStorage.getItem('token');
 
   try {
-    const res = await fetch(`http://localhost:5000/api/posts/comment/${id}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ text: commentText }),
-    });
+   const res = await fetch(`${BASE_URL}/posts/comment/${id}`, {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${token}`,
+  },
+  body: JSON.stringify({ text: commentText }),
+});
 
     if (!res.ok) throw new Error("Comment failed");
 

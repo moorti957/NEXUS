@@ -6,6 +6,7 @@ import { useToast } from '../components/common/Toast';
 import { useAuth } from '../context/AuthContext';
 
 export default function Blog() {
+  const BASE_URL = `${import.meta.env.VITE_API_URL}/api`;
   const { user } = useAuth();
   const { showToast } = useToast();
   const [categoryCounts, setCategoryCounts] = useState({});
@@ -135,7 +136,7 @@ export default function Blog() {
 
   // Load posts
  useEffect(() => {
-  fetch("http://localhost:5000/api/posts")
+  fetch(`${BASE_URL}/posts`)
     .then(res => res.json())
     .then(data => {
       setPosts(data);
@@ -181,7 +182,7 @@ export default function Blog() {
   const token = user?.token || localStorage.getItem("token");
 
   try {
-    const res = await fetch("http://localhost:5000/api/posts", {
+    const res = await fetch(`${BASE_URL}/posts`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -218,7 +219,7 @@ const handleLike = async (postId) => {
   const token = user?.token || localStorage.getItem("token");
 
   try {
-    const res = await fetch(`http://localhost:5000/api/posts/like/${postId}`, {
+    const res = await fetch(`${BASE_URL}/posts/like/${postId}`, {
       method: "PUT",
       headers: {
         Authorization: `Bearer ${token}`,
