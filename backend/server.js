@@ -438,6 +438,10 @@ app.use('*', (req, res) => {
   });
 });
 
+app.get("/", (req, res) => {
+  res.send("🚀 Backend is LIVE and running");
+});
+
 // ===========================================
 // ERROR HANDLING MIDDLEWARE
 // ===========================================
