@@ -1071,11 +1071,7 @@ const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
                   <div className="text-center mb-8">
                     <div className="w-24 h-24 mx-auto mb-4 rounded-full overflow-hidden relative">
                       <img
-                        src={
-  profileData.avatar
-    ? `${BASE_URL}${profileData.avatar}`
-    : getAvatarUrl(profileData.name)
-}
+                        src={getAvatarUrlFixed(profileData.avatar, profileData.name)}
                         alt={profileData.name}
                         className="w-full h-full object-cover"
                       />
