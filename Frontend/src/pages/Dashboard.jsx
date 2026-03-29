@@ -234,6 +234,18 @@ const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
     }
   };
 
+  const getAvatarUrlFixed = (avatar, name) => {
+  if (!avatar) {
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}`;
+  }
+
+  if (avatar.startsWith("http")) {
+    return avatar;
+  }
+
+  return `${BASE_URL}${avatar}`;
+};
+
   const handleProjectStatusUpdate = (data) => {
     setRecentProjects(prev => 
       prev.map(p => p._id === data.projectId ? { ...p, status: data.newStatus } : p)
@@ -702,7 +714,7 @@ const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
                               ">
                           {member.avatar ? (
   <img
-    src={`${BASE_URL}${member.avatar}`}
+   src={getAvatarUrlFixed(member.avatar, member.name)}
     alt={member.name}
     className="w-full h-full object-cover rounded-full"
     onError={(e) => {
@@ -985,7 +997,7 @@ const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
                           ">
                            {member.avatar ? (
   <img
-    src={`${BASE_URL}${member.avatar}`}
+    src={getAvatarUrlFixed(member.avatar, member.name)}
     alt={member.name}
     className="w-full h-full object-cover rounded-full"
     onError={(e) => {
@@ -1360,11 +1372,11 @@ const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
                 </div>
 
                 <div className="flex items-center gap-4 mb-6">
-                  <img
-                    src={selectedMember.avatar || getAvatarUrl(selectedMember.name)}
-                    className="w-16 h-16 rounded-full"
-                    alt={selectedMember.name}
-                  />
+                 <img
+  src={getAvatarUrlFixed(selectedMember.avatar, selectedMember.name)}
+  className="w-16 h-16 rounded-full object-cover"
+  alt={selectedMember.name}
+/>
                   <div>
                     <h3 className="text-lg font-bold">{selectedMember.name}</h3>
                     <p className="text-sm text-gray-400">{selectedMember.role}</p>
