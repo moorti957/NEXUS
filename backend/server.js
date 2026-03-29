@@ -78,9 +78,12 @@ let io;
 // ===========================================
 io = socketIo(server, {
   cors: {
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-    credentials: true,
-    methods: ['GET', 'POST']
+    origin: [
+      "http://localhost:5173",
+      "https://nexus-beryl-five.vercel.app"
+    ],
+    methods: ["GET", "POST"],
+    credentials: true
   }
 });
 
@@ -197,10 +200,11 @@ app.use(helmet({
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", "data:", "https:"],
       scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-      connectSrc: [
+  connectSrc: [
   "'self'",
-  process.env.FRONTEND_URL || "http://localhost:5173",
-  "https://nexus-v401.onrender.com" // 👈 ADD THIS
+  process.env.FRONTEND_URL,
+  "https://nexus-v40l.onrender.com",
+  "wss://nexus-v40l.onrender.com"
 ],
     },
   },
@@ -210,7 +214,10 @@ app.use(helmet({
 
 
 app.use(cors({
-  origin: true,
+ origin: [
+  "http://localhost:5173",
+  "https://nexus-beryl-five.vercel.app"
+],
   credentials: true
 }));
 
