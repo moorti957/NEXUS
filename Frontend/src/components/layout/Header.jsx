@@ -96,6 +96,18 @@ const getInitials = (name) => {
       }
     };
 
+    const getAvatarUrl = (avatar) => {
+  if (!avatar) return "";
+
+  // external URL (ui-avatars etc)
+  if (avatar.startsWith("http")) {
+    return avatar;
+  }
+
+  // uploaded image
+  return `${BASE_URL}${avatar}`;
+};
+
     const handleLogout = () => {
       logout();
       navigate('/');
@@ -216,7 +228,7 @@ const getInitials = (name) => {
                 >
                   {user.avatar ? (
                     <img
-  src={`${BASE_URL}${user.avatar}`}
+  src={getAvatarUrl(user.avatar)}
   alt={user.name}
   className="w-full h-full rounded-full object-cover"
 />
