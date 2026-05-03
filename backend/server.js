@@ -38,6 +38,13 @@ const postRoutes = require("./routes/postRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
 const contactRoutes = require('./routes/contactRoutes');
 const contactNotificationRoutes = require('./routes/contactNotificationRoutes');
+const onboardingRoutes = require('./routes/onboardingRoutes');
+const whatsappRoutes = require("./routes/whatsapp.routes");
+const serviceRoutes = require('./routes/serviceRoutes');
+
+
+
+
 
 
 
@@ -89,6 +96,7 @@ io = socketIo(server, {
 
 // Store io instance for use in controllers
 app.set('io', io);
+app.set('onlineUsers', onlineUsers);
 
 // Socket.io connection handling
 // ===========================================
@@ -267,16 +275,11 @@ const limiter = rateLimit({
 app.use('/api', limiter);
 
 // Data sanitization against NoSQL query injection
-app.use(mongoSanitize());
 
-// Data sanitization against XSS
-app.use(xss());
-
-// Prevent parameter pollution
-app.use(hpp());
 // Body parser FIRST
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Body parser (ONLY ONCE)
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // THEN routes
 app.use('/api/notifications', notificationRoutes);
@@ -288,8 +291,8 @@ app.use('/api/contact-notifications', contactNotificationRoutes);
 // ===========================================
 
 // Body parser
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+// app.use(express.json({ limit: '10mb' }));
+// app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // Cookie parser
 app.use(cookieParser());
@@ -315,13 +318,29 @@ uploadDirs.forEach(dir => {
   }
 });
 
+
+
+app.use('/api/services', serviceRoutes);
+
 // Serve static files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-app.use("/api/users", userRoutes);
+app.use('/api/onboarding', onboardingRoutes);
 
-app.use("/api/posts", postRoutes);
+app.use('/api/users', userRoutes);
 
+app.use('/api/posts', postRoutes);
+
+
+// 👇 use router
+app.use("/api/whatsapp", whatsappRoutes);
+
+
+
+app.use(mongoSanitize());
+app.use(xss());
+app.use(hpp());
+app.use('/api/user', userRoutes);
 // ===========================================
 // CUSTOM MIDDLEWARE
 // ===========================================

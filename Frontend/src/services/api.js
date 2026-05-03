@@ -8,8 +8,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: true, // Important for cookies
-  timeout: 30000, // 30 seconds timeout
+  timeout:60000
 });
 
 // Store pending requests for retry after token refresh
@@ -22,19 +21,87 @@ let isRefreshing = false;
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
+    
+    // ✅ HAMESHA print hoga - condition nahi
+    console.log("🔑 INTERCEPTOR HIT:", config.url);
+    console.log("🔑 TOKEN:", token ? token.substring(0, 20) + "..." : "NULL");
+    
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+      config.headers["x-auth-token"] = token;
     }
     
-    // Add request timestamp for debugging
     config.metadata = { startTime: new Date() };
-    
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
+
+
+// Get JWT token from localStorage (set after login)
+const getToken = () => localStorage.getItem('token');
+
+// Generic request function
+const request = async (endpoint, options = {}) => {
+  const headers = {
+    'Content-Type': 'application/json',
+    ...options.headers,
+  };
+  const token = getToken();
+  if (token) headers['x-auth-token'] = token;
+
+  const response = await fetch(`${API_URL}${endpoint}`, {
+    ...options,
+    headers,
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.msg || data.message || 'Request failed');
+  return data;
+};
+
+// Get user profile + onboarding data
+export const getUserProfile = async () => {
+  const res = await api.get('/users/profile');
+  return res.data;
+}; // adjust if your route is /api/users/profile
+
+// Save current step data
+export const saveOnboardingStep = async (data) => {
+  const res = await api.post('/onboarding/save-step', data);
+  return res.data;
+};
+
+// Complete onboarding
+export const completeOnboarding = async (data) => {
+  const res = await api.post('/onboarding/complete', data);
+  return res.data;
+};
+
+// Upload profile photo (multipart/form-data)
+export const uploadProfilePhoto = async (file) => {
+  const formData = new FormData();
+  formData.append('photo', file);
+
+  const token = getToken();
+
+  const response = await fetch(`${API_URL}/onboarding/upload-photo`, {
+    method: 'POST',
+    headers: {
+      'x-auth-token': token,
+      // ❌ DO NOT ADD Content-Type
+    },
+    body: formData,
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    console.log("🔥 BACKEND ERROR:", data);
+    throw new Error(data.message || 'Upload failed');
+  }
+
+  return data.photoUrl;
+};
 
 // ===========================================
 // RESPONSE INTERCEPTOR
@@ -196,6 +263,9 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+
+
 
 // ===========================================
 // HELPER FUNCTIONS
@@ -382,6 +452,77 @@ export const download = async (url, params = {}) => {
   }
 };
 
+
+
+// ===========================================
+// FREELANCER TEAM & INVITE FUNCTIONS
+// ===========================================
+
+/**
+ * Get all freelancers (excluding current user) for invite modal
+ * @returns {Promise} List of freelancers
+ */
+export const getFreelancers = async () => {
+  const res = await api.get('/team/freelancers');
+  return res.data;
+};
+
+/**
+ * Get accepted team members for the current freelancer
+ * @returns {Promise} List of accepted team members
+ */
+export const getMyTeam = async () => {
+  const res = await api.get('/team/my-team');
+  return res.data;
+};
+
+/**
+ * Send an invite to another freelancer
+ * @param {string} memberId - ID of the freelancer to invite
+ * @returns {Promise}
+ */
+export const sendInvite = async (memberId) => {
+  const res = await api.post('/team/send', { memberId });
+  return res.data;
+};
+
+/**
+ * Get pending invites received by the current user
+ * @returns {Promise} List of pending invites
+ */
+export const getPendingInvites = async () => {
+  const res = await api.get('/team/invitations/pending');
+  return res.data;
+};
+
+/**
+ * Accept a pending invite
+ * @param {string} inviteId - ID of the invite
+ * @returns {Promise}
+ */
+export const acceptInvite = async (inviteId) => {
+  const res = await api.post(`/team/invitations/${inviteId}/accept`);
+  return res.data;
+};
+
+/**
+ * Reject a pending invite
+ * @param {string} inviteId - ID of the invite
+ * @returns {Promise}
+ */
+export const rejectInvite = async (inviteId) => {
+  const res = await api.post(`/team/invitations/${inviteId}/reject`);
+  return res.data;
+};
+
+
+export const sendWhatsAppMessage = async (name, phone) => {
+  const res = await post('/whatsapp/send', {
+    name,
+    phone,
+  });
+  return res;
+};
 // ===========================================
 // ERROR HANDLER
 // ===========================================

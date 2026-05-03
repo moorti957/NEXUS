@@ -109,6 +109,23 @@ const socket = socketRef.current;
     }
   });
 
+  socket.on("invite:received", (data) => {
+  console.log("🔥 INVITE RECEIVED:", data);
+
+  const notification = {
+    _id: data.inviteId,
+    type: "invite",
+    message: `${data.fromName} sent you a team invite`,
+    isRead: false,
+    createdAt: new Date()
+  };
+
+  setNotifications(prev => [notification, ...prev]);
+  setUnreadCount(prev => prev + 1);
+
+  showToast(notification.message, "info");
+});
+
   socket.on("connect_error", (error) => {
     console.error("Socket connection error:", error);
 

@@ -186,14 +186,14 @@ teamId: {
   },
 
   // Account Settings
-  role: {
-    type: String,
-    enum: {
-      values: ['user', 'admin', 'moderator'],
-      message: '{VALUE} is not a valid role'
-    },
-    default: 'user'
-  },
+ role: {
+ type:String,
+ enum:{
+   values:['Client','Freelancer','Viewer','admin'],
+   message:'{VALUE} is not a valid role'
+ },
+ default:'Client'
+},
 
   isActive: {
     type: Boolean,

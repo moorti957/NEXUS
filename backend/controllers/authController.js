@@ -2,6 +2,8 @@ const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { validationResult } = require('express-validator');
+const Client = require('../models/Client');
+const UserProfile = require('../models/UserProfile');
 
 // ===========================================
 // HELPER FUNCTIONS
@@ -100,16 +102,24 @@ const register = async (req, res) => {
     }
 
    const { name, email, password, role, accessKey } = req.body;
+   console.log("🔥 ROLE FROM FRONTEND:", role); // 👈 ADD THIS
 
-   let userRole = 'user';
+   
 
-   console.log("ACCESS KEY FROM FRONTEND:", accessKey);
-console.log("ACCESS KEY FROM ENV:", process.env.ACCESS_KEY);
+   
+let userRole = 'Client';
+
+if (role === 'Freelancer') {
+  userRole = 'Freelancer';
+}
+
+if (role === 'Client') {
+  userRole = 'Client';
+}
 
 if (accessKey && accessKey === process.env.ACCESS_KEY) {
   userRole = 'admin';
 }
-
     // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
@@ -128,6 +138,54 @@ if (accessKey && accessKey === process.env.ACCESS_KEY) {
   status: 'offline',
   lastSeen: Date.now(),
 });
+
+await UserProfile.create({
+ userId: user._id,
+ firstName: name,
+ accountType: userRole,
+ onboardingCompleted: false
+});
+
+if(userRole === 'Client'){
+
+ const existingClient =
+ await Client.findOne({ email });
+
+ if(!existingClient){
+
+   await Client.create({
+
+      userId: user._id,
+
+      createdBy: user._id, // ⭐ IMPORTANT
+
+      name: user.name,
+      email: user.email,
+
+      role: user.role,
+      status: user.status,
+
+      avatar: user.avatar || '',
+
+      phone:'',
+      company:'',
+
+      activeProjects:0,
+      totalProjects:0,
+
+      projects:[],
+
+      isDeleted:false
+
+   });
+
+   console.log(
+    "✅ Client added to clients collection"
+   );
+
+ }
+
+}
 
     // Update last login
     user.lastLogin = Date.now();
@@ -238,11 +296,11 @@ if (!isPasswordMatch) {
 }
 
 // access key validation
-if (user.role === 'admin') {
+if (user.role === 'superadmin') {
   if (!accessKey || accessKey !== process.env.ACCESS_KEY) {
     return res.status(403).json({
       success: false,
-      message: 'Access key required for admin login'
+      message: 'Access key required'
     });
   }
 }

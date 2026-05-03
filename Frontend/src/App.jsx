@@ -35,6 +35,10 @@ import Privacy from './pages/Privacy';
 import Cookie from './pages/Cookie';
 import HelpCenter from './pages/HelpCenter';
 import Notifications from './pages/Notifications';
+import OnboardingWizard from './components/onboarding/OnboardingWizard';
+import ClientPortal from './pages/ClientPortal';
+import ProjectWorkspace from './pages/ProjectWorkspace.jsx'
+
 
 // NEW: Import the three project detail pages
 import ProjectDetail from "./pages/ProjectDetail";
@@ -61,13 +65,23 @@ function AnimatedRoutes() {
         <Route path="/cookie" element={<Cookie />} />
         <Route path="/help" element={<HelpCenter />} />
         <Route path="/notifications" element={<Notifications />} />
+        <Route path="/onboarding" element={<OnboardingWizard />} />
+        <Route
+          path="/client-portal"
+          element={
+            <ProtectedRoute>
+              <ClientPortal />
+            </ProtectedRoute>
+          }
+        />
 
-        
+
         {/* Project Detail Page */}
-        <Route path="/projects/:slug" element={<ProjectDetail />} />
+        {/* <Route path="/projects/:slug" element={<ProjectDetail />} /> */}
 
         {/* Existing dynamic project route */}
         <Route path="/projects/:id" element={<ProjectDetails />} />
+        <Route path="/projects/:id/workspace" element={<ProjectWorkspace />} />
 
         <Route path="/team/:id" element={<TeamMemberProfile />} />
 
@@ -98,7 +112,7 @@ function App() {
 
   return (
     <BrowserRouter>
-    
+
       <ThemeProvider>
         <AuthProvider>
           <ToastProvider>
@@ -116,9 +130,9 @@ function App() {
                 {chatOpen && (
                   <ChatModal onClose={() => setChatOpen(false)} />
                 )}
-                </NotificationProvider>
-              </SocketProvider>
-            
+              </NotificationProvider>
+            </SocketProvider>
+
           </ToastProvider>
         </AuthProvider>
       </ThemeProvider>

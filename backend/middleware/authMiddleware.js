@@ -12,25 +12,26 @@ const User = require('../models/User');
  * @param {Function} next - Express next function
  */
 const protect = async (req, res, next) => {
+  console.log("🔐 PROTECT HIT:", req.url);
+  
   try {
     let token;
 
-    // Check for token in Authorization header
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-      // Get token from Bearer header
       token = req.headers.authorization.split(' ')[1];
     }
-    // Check for token in cookies
+    else if (req.headers['x-auth-token']) {
+      token = req.headers['x-auth-token'];
+    }
     else if (req.cookies && req.cookies.token) {
       token = req.cookies.token;
     }
-    // Check for token in query parameters (less secure, use with caution)
     else if (req.query && req.query.token) {
       token = req.query.token;
     }
 
-    // If no token found
     if (!token) {
+      console.log("❌ NO TOKEN for:", req.url);
       return res.status(401).json({
         success: false,
         message: 'Not authorized to access this route. Please login.',
@@ -38,12 +39,14 @@ const protect = async (req, res, next) => {
       });
     }
 
-    try {
-      // Verify token
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log("🔐 TOKEN FOUND for:", req.url);
 
-      // Get user from token (excluding password)
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      console.log("🔐 TOKEN VERIFIED, userId:", decoded.id);
+
       const user = await User.findById(decoded.id).select('-password');
+      console.log("🔐 USER FOUND:", user ? user.name : "NULL");
 
       if (!user) {
         return res.status(401).json({
@@ -53,7 +56,6 @@ const protect = async (req, res, next) => {
         });
       }
 
-      // Check if user is active
       if (!user.isActive) {
         return res.status(403).json({
           success: false,
@@ -62,7 +64,6 @@ const protect = async (req, res, next) => {
         });
       }
 
-      // Check if user is blocked
       if (user.isBlocked) {
         return res.status(403).json({
           success: false,
@@ -71,7 +72,6 @@ const protect = async (req, res, next) => {
         });
       }
 
-      // Check if password was changed after token was issued
       if (user.passwordChangedAt) {
         const changedTimestamp = parseInt(user.passwordChangedAt.getTime() / 1000, 10);
         if (decoded.iat < changedTimestamp) {
@@ -83,12 +83,13 @@ const protect = async (req, res, next) => {
         }
       }
 
-      // Attach user to request object
       req.user = user;
+      console.log("✅ PROTECT PASSED for:", req.url);
       next();
+
     } catch (error) {
-      // Handle specific JWT errors
       if (error.name === 'TokenExpiredError') {
+        console.log("❌ TOKEN EXPIRED for:", req.url);
         return res.status(401).json({
           success: false,
           message: 'Your session has expired. Please login again.',
@@ -97,6 +98,7 @@ const protect = async (req, res, next) => {
       }
 
       if (error.name === 'JsonWebTokenError') {
+        console.log("❌ INVALID TOKEN for:", req.url);
         return res.status(401).json({
           success: false,
           message: 'Invalid token. Please login again.',
@@ -107,7 +109,7 @@ const protect = async (req, res, next) => {
       throw error;
     }
   } catch (error) {
-    console.error('Auth Middleware Error:', error);
+    console.error('❌ Auth Middleware Error:', error);
     return res.status(500).json({
       success: false,
       message: 'Server error during authentication',

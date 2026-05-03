@@ -5,6 +5,7 @@ import Button from '../components/common/Button';
 import { useToast } from '../components/common/Toast';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
+import OnboardingWizard from '../components/onboarding/OnboardingWizard'; // path according to your folder structure
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -13,26 +14,40 @@ export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
   const [showResetPassword, setShowResetPassword] = useState(false);
- const [formData, setFormData] = useState({
-  name: '',
-  email: '',
-  password: '',
-  confirmPassword: '',
-  rememberMe: false,
-  accessKey: ''   // NEW FIELD
-});
+  const [selectedRole, setSelectedRole] = useState('Client');
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    rememberMe: false,
+    accessKey: '',
+   role: 'Client' // 🔥 capital C // 👈 default
+  });
   const [errors, setErrors] = useState({});
   const [apiErrors, setApiErrors] = useState([]);
 
   // Redirect if already logged in
-useEffect(() => {
-  if (!user) return;
+  useEffect(() => {
+ if (!user) return;
 
-  if (user.role === "admin") {
-    navigate('/dashboard');
-  } else {
-    navigate('/');
-  }
+ if (
+   user.role === 'Freelancer' &&
+   localStorage.getItem(
+    `onboarding_complete_${user.id}`
+   ) !== 'true'
+ ) {
+   navigate('/onboarding');
+   return;
+ }
+
+ if (user.role === 'Freelancer') {
+   navigate('/dashboard');
+   return;
+ }
+
+ navigate('/');
+
 }, [user, navigate]);
 
   // Password strength checker
@@ -47,7 +62,7 @@ useEffect(() => {
   };
 
   const getPasswordStrengthText = (strength) => {
-    switch(strength) {
+    switch (strength) {
       case 0: return { text: 'Very Weak', color: 'text-red-500', bg: 'bg-red-500' };
       case 1: return { text: 'Weak', color: 'text-orange-500', bg: 'bg-orange-500' };
       case 2: return { text: 'Fair', color: 'text-yellow-500', bg: 'bg-yellow-500' };
@@ -114,29 +129,34 @@ useEffect(() => {
   // Handle login submit
   const handleLogin = async () => {
     try {
-     const response = await api.post('/auth/login', {
-  email: formData.email,
-  password: formData.password,
-  rememberMe: formData.rememberMe,
-  accessKey: formData.accessKey
-});
+      const response = await api.post('/auth/login', {
+        email: formData.email,
+        password: formData.password,
+        rememberMe: formData.rememberMe,
+        accessKey: formData.accessKey
+      });
 
-     if (response.data.success) {
+      if (response.data.success) {
+        const loggedUser = response.data.data.user;
+        const token = response.data.data.token;
 
-  const loggedUser = response.data.data.user;
+        // 🔥 ADD THIS LINE
+        localStorage.setItem("token", token);
 
-  authLogin(loggedUser, response.data.data.token);
-  showToast(response.data.message || 'Login successful!', 'success');
+        authLogin(loggedUser, token);
 
-  if (loggedUser.role === "admin") {
-    navigate('/dashboard');
-  } else {
-    navigate('/');
-  }
+        showToast(response.data.message || 'Login successful!', 'success');
+
+if (loggedUser.role === "Freelancer") {
+ window.location.replace('/dashboard');
+ return;
 }
+
+window.location.replace('/');
+      }
     } catch (error) {
       console.error('Login error:', error);
-      
+
       if (error.response) {
         if (error.response.data.errors) {
           const fieldErrors = {};
@@ -160,53 +180,116 @@ useEffect(() => {
 
   // Handle register submit
   const handleRegister = async () => {
-    try {
-      const response = await api.post('/auth/register', {
-  name: formData.name,
-  email: formData.email,
-  password: formData.password,
-  confirmPassword: formData.confirmPassword,
-  accessKey: formData.accessKey
-});
+  try {
+    const response = await api.post('/auth/register', {
+      name: formData.name,
+      email: formData.email,
+      password: formData.password,
+      confirmPassword: formData.confirmPassword,
+      accessKey: formData.accessKey,
+      role: formData.role
+    });
 
-  const loggedUser = response.data.data.user;
+    const loggedUser = response.data.data.user;
+    const token = response.data.data.token;
 
-authRegister(loggedUser, response.data.data.token);
-showToast(response.data.message || 'Registration successful!', 'success');
+    authRegister(loggedUser, token);
 
-if (loggedUser.role === "admin") {
-  navigate('/dashboard');
-} else {
-  navigate('/');
-}
-    } catch (error) {
-      console.error('Registration error:', error);
-      
-      if (error.response) {
-        if (error.response.data.errors) {
-          const fieldErrors = {};
-          error.response.data.errors.forEach(err => {
-            fieldErrors[err.field] = err.message;
-          });
-          setErrors(fieldErrors);
-        } else {
-          setApiErrors([error.response.data.message || 'Registration failed']);
-        }
-        showToast(error.response.data.message || 'Registration failed', 'error');
-      } else if (error.request) {
-        setApiErrors(['Network error. Please check your connection.']);
-        showToast('Network error. Please try again.', 'error');
-      } else {
-        setApiErrors(['An unexpected error occurred.']);
-        showToast('An unexpected error occurred.', 'error');
-      }
+    localStorage.setItem("token", token);
+
+    showToast(
+      response.data.message || "Registration successful!",
+      "success"
+    );
+
+    // ✅ ONLY FREELANCER onboarding
+    if (loggedUser.role === "Freelancer") {
+
+      localStorage.setItem(
+        `onboarding_complete_${loggedUser.id}`,
+        "false"
+      );
+
+      navigate("/onboarding");
+
+    } else {
+      // ✅ Client direct home/dashboard
+      navigate("/");
     }
-  };
+
+  } catch (error) {
+
+    console.error("Registration error:", error);
+    console.log("🔥 FULL BACKEND ERROR:", error.response?.data);
+
+    if (error.response?.data?.errors) {
+      error.response.data.errors.forEach((e) => {
+        console.log(`❌ ${e.field}: ${e.message}`);
+      });
+    }
+
+    if (error.response) {
+
+      if (error.response.data.errors) {
+
+        const fieldErrors = {};
+
+        error.response.data.errors.forEach((e) => {
+          fieldErrors[e.field] = e.message;
+        });
+
+        setErrors(fieldErrors);
+
+        error.response.data.errors.forEach((e) => {
+          showToast(
+            `${e.field}: ${e.message}`,
+            "error"
+          );
+        });
+
+      } else {
+
+        setApiErrors([
+          error.response.data.message ||
+          "Registration failed"
+        ]);
+
+        showToast(
+          error.response.data.message ||
+          "Registration failed",
+          "error"
+        );
+      }
+
+    } else if (error.request) {
+
+      setApiErrors([
+        "Network error. Please check your connection."
+      ]);
+
+      showToast(
+        "Network error. Please try again.",
+        "error"
+      );
+
+    } else {
+
+      setApiErrors([
+        "An unexpected error occurred."
+      ]);
+
+      showToast(
+        "An unexpected error occurred.",
+        "error"
+      );
+    }
+  }
+};
 
   // Handle form submit
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     const newErrors = validateForm();
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -231,7 +314,7 @@ if (loggedUser.role === "admin") {
   // Handle password reset
   const handleResetPassword = async (e) => {
     e.preventDefault();
-    
+
     if (!formData.email) {
       showToast('Please enter your email', 'error');
       return;
@@ -239,7 +322,7 @@ if (loggedUser.role === "admin") {
 
     setLoading(true);
     setApiErrors([]);
-    
+
     try {
       const response = await api.post('/auth/forgot-password', {
         email: formData.email,
@@ -252,7 +335,7 @@ if (loggedUser.role === "admin") {
       }
     } catch (error) {
       console.error('Password reset error:', error);
-      
+
       if (error.response) {
         setApiErrors([error.response.data.message || 'Failed to send reset link']);
         showToast(error.response.data.message || 'Failed to send reset link', 'error');
@@ -273,32 +356,34 @@ if (loggedUser.role === "admin") {
     setIsLogin(!isLogin);
     setErrors({});
     setApiErrors([]);
-    setFormData({
-      name: '',
-      email: '',
-      password: '',
-      confirmPassword: '',
-      rememberMe: false,
-    });
+   setFormData({
+  name: '',
+  email: '',
+  password: '',
+  confirmPassword: '',
+  rememberMe: false,
+  accessKey: '',
+  role: 'Client' // 🔥 ADD THIS
+});
   };
 
   return (
     <div className="min-h-screen   from-slate-900 via-purple-900 to-slate-900">
       {/* Professional Background Pattern */}
       <div className="absolute inset-0  bg-grid-pattern opacity-5"></div>
-      
+
       {/* Main Container - Full screen with centered card */}
       <div className="relative min-h-screen  flex items-center justify-center p-6 lg:p-8">
         {/* Large Centered Card Container */}
         <div className="w-full max-w-6xl mt-20 mx-auto">
           <div className="grid lg:grid-cols-2 bg-white/5 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/10 overflow-hidden">
-            
+
             {/* Left Panel - Branding & Info (Desktop) */}
             <div className="hidden lg:block relative bg-gradient-to-br from-indigo-600/20 to-purple-600/20 p-12">
               {/* Decorative Elements */}
               <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl"></div>
               <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl"></div>
-              
+
               <div className="relative z-10 h-full flex flex-col">
                 {/* Company Logo & Name */}
                 <div className="mb-12">
@@ -344,7 +429,7 @@ if (loggedUser.role === "admin") {
                 <div className="mt-auto pt-8 border-t border-white/10">
                   <div className="flex items-center gap-6">
                     <div className="flex -space-x-3">
-                      {[1,2,3,4].map((i) => (
+                      {[1, 2, 3, 4].map((i) => (
                         <div key={i} className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 border-2 border-white/20 flex items-center justify-center text-sm font-bold text-white">
                           {String.fromCharCode(64 + i)}
                         </div>
@@ -376,10 +461,10 @@ if (loggedUser.role === "admin") {
                 {/* Header */}
                 <div className="text-center lg:text-left mb-8">
                   <h2 className="text-3xl font-bold text-white mb-2">
-                    {showResetPassword 
-                      ? 'Reset Password' 
-                      : isLogin 
-                        ? 'Sign In' 
+                    {showResetPassword
+                      ? 'Reset Password'
+                      : isLogin
+                        ? 'Sign In'
                         : 'Create Account'
                     }
                   </h2>
@@ -434,7 +519,7 @@ if (loggedUser.role === "admin") {
                       <Button type="submit" size="lg" fullWidth loading={loading}>
                         Send Reset Link
                       </Button>
-                      
+
                       <button
                         type="button"
                         onClick={() => setShowResetPassword(false)}
@@ -461,11 +546,10 @@ if (loggedUser.role === "admin") {
                           <input
                             type="text"
                             name="name"
-                            value={formData.name}
+                            value={formData.name || ''}
                             onChange={handleChange}
-                            className={`w-full pl-10 pr-4 py-3 rounded-xl bg-white/5 border transition-all text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 ${
-                              errors.name ? 'border-red-500/50' : 'border-white/10'
-                            }`}
+                            className={`w-full pl-10 pr-4 py-3 rounded-xl bg-white/5 border transition-all text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 ${errors.name ? 'border-red-500/50' : 'border-white/10'
+                              }`}
                             placeholder="John Doe"
                           />
                         </div>
@@ -491,9 +575,8 @@ if (loggedUser.role === "admin") {
                           name="email"
                           value={formData.email}
                           onChange={handleChange}
-                          className={`w-full pl-10 pr-4 py-3 rounded-xl bg-white/5 border transition-all text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 ${
-                            errors.email ? 'border-red-500/50' : 'border-white/10'
-                          }`}
+                          className={`w-full pl-10 pr-4 py-3 rounded-xl bg-white/5 border transition-all text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 ${errors.email ? 'border-red-500/50' : 'border-white/10'
+                            }`}
                           placeholder="john@company.com"
                         />
                       </div>
@@ -518,9 +601,8 @@ if (loggedUser.role === "admin") {
                           name="password"
                           value={formData.password}
                           onChange={handleChange}
-                          className={`w-full pl-10 pr-4 py-3 rounded-xl bg-white/5 border transition-all text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 ${
-                            errors.password || errors.passwordStrength ? 'border-red-500/50' : 'border-white/10'
-                          }`}
+                          className={`w-full pl-10 pr-4 py-3 rounded-xl bg-white/5 border transition-all text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 ${errors.password || errors.passwordStrength ? 'border-red-500/50' : 'border-white/10'
+                            }`}
                           placeholder="••••••••"
                         />
                       </div>
@@ -529,12 +611,11 @@ if (loggedUser.role === "admin") {
                       {!isLogin && formData.password && (
                         <div className="mt-3">
                           <div className="flex gap-1 mb-2">
-                            {[1,2,3,4,5].map((level) => (
+                            {[1, 2, 3, 4, 5].map((level) => (
                               <div
                                 key={level}
-                                className={`h-1 flex-1 rounded-full transition-all ${
-                                  level <= passwordStrength ? strengthInfo.bg : 'bg-white/10'
-                                }`}
+                                className={`h-1 flex-1 rounded-full transition-all ${level <= passwordStrength ? strengthInfo.bg : 'bg-white/10'
+                                  }`}
                               />
                             ))}
                           </div>
@@ -551,49 +632,79 @@ if (loggedUser.role === "admin") {
                         <p className="mt-1 text-xs text-red-400">{errors.passwordStrength}</p>
                       )}
                     </div>
+                    {!isLogin && (
+  <div>
+    <label className="block text-sm font-medium text-gray-300 mb-2">
+      Confirm Password <span className="text-red-400">*</span>
+    </label>
+
+    <input
+      type="password"
+      name="confirmPassword"
+      value={formData.confirmPassword}
+      onChange={handleChange}
+      placeholder="••••••••"
+      className={`w-full px-4 py-3 rounded-xl bg-white/5 border ${
+        errors.confirmPassword ? 'border-red-500/50' : 'border-white/10'
+      } text-white`}
+    />
+
+    {errors.confirmPassword && (
+      <p className="mt-1 text-xs text-red-400">
+        {errors.confirmPassword}
+      </p>
+    )}
+  </div>
+)}
 
                     {/* Optional Access Key */}
-<div>
-  <label className="block text-sm font-medium text-gray-300 mb-2">
-    Access Key (Optional)
-  </label>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Access Key (Optional)
+                      </label>
 
-  <input
-    type="text"
-    name="accessKey"
-    value={formData.accessKey}
-    onChange={handleChange}
-    placeholder="Enter special access key"
-    className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white"
-  />
-</div>
+                      <input
+                        type="text"
+                        name="accessKey"
+                        value={formData.accessKey}
+                        onChange={handleChange}
+                        placeholder="Enter special access key"
+                        className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white"
+                      />
+                    </div>
 
                     {/* Confirm Password (Register only) */}
                     {!isLogin && (
                       <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">
-                          Confirm Password <span className="text-red-400">*</span>
+                        <label className="block text-sm text-gray-300 mb-2">
+                          Select Role
                         </label>
-                        <div className="relative">
-                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <svg className="h-5 w-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                            </svg>
-                          </div>
-                          <input
-                            type="password"
-                            name="confirmPassword"
-                            value={formData.confirmPassword}
-                            onChange={handleChange}
-                            className={`w-full pl-10 pr-4 py-3 rounded-xl bg-white/5 border transition-all text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 ${
-                              errors.confirmPassword ? 'border-red-500/50' : 'border-white/10'
-                            }`}
-                            placeholder="••••••••"
-                          />
-                        </div>
-                        {errors.confirmPassword && (
-                          <p className="mt-1 text-xs text-red-400">{errors.confirmPassword}</p>
-                        )}
+
+                        <div className="flex gap-3">
+  <button
+    type="button"
+    onClick={() => setFormData(prev => ({ ...prev, role: 'Freelancer' }))} // 🔥 CHANGE
+    className={`flex-1 py-2 rounded-lg ${
+      formData.role === 'Freelancer'
+        ? 'bg-indigo-500 text-white'
+        : 'bg-white/5 text-gray-400'
+    }`}
+  >
+    Freelancer
+  </button>
+
+  <button
+    type="button"
+    onClick={() => setFormData(prev => ({ ...prev, role: 'Client' }))} // 🔥 CHANGE
+    className={`flex-1 py-2 rounded-lg ${
+      formData.role === 'Client'
+        ? 'bg-indigo-500 text-white'
+        : 'bg-white/5 text-gray-400'
+    }`}
+  >
+    Client
+  </button>
+</div>
                       </div>
                     )}
 
@@ -678,7 +789,7 @@ if (loggedUser.role === "admin") {
       </div>
 
       {/* Background Grid Pattern */}
-      <style jsx>{`
+      <style>{`
         .bg-grid-pattern {
           background-image: 
             linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),

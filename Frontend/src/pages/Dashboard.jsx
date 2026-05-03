@@ -1,4 +1,7 @@
-import { useState, useEffect } from 'react';
+import api from '../services/api';
+import ServiceManagerTab from '../pages/Servicemanagertab';
+
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Reveal from '../components/common/Reveal';
 import Button from '../components/common/Button';
@@ -7,8 +10,10 @@ import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../socket/context/SocketContext';
 import { useNotifications } from "../context/NotificationContext";
 import ChatModal from '../components/chat/ChatModal';
+import { InviteFreelancersModal } from '../components/InviteFreelancersModal';
 
-import api from '../services/api';
+
+
 
 
 
@@ -43,6 +48,7 @@ export default function Dashboard() {
 
   // State management
   const [activeTab, setActiveTab] = useState('overview');
+  
   const [loading, setLoading] = useState(false);
   const [dashboardData, setDashboardData] = useState(null);
   const [stats, setStats] = useState({});
@@ -50,15 +56,22 @@ export default function Dashboard() {
   const [teamMembers, setTeamMembers] = useState([]);
   const [selectedMember, setSelectedMember] = useState(null);
   const [showMemberProfile, setShowMemberProfile] = useState(false);
+  const [freelancers, setFreelancers] = useState([]);
+const [pendingInvites, setPendingInvites] = useState([]);
+const [inviteModalOpen, setInviteModalOpen] = useState(false);
 
   const [chatUser, setChatUser] = useState(null);
   const [showChatModal, setShowChatModal] = useState(false);
   
   const [activityData, setActivityData] = useState([]);
+  const [invitedIds, setInvitedIds] = useState([]);
   const [analytics, setAnalytics] = useState({});
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [typingUsers, setTypingUsers] = useState({});
+  const [freelancersLoading, setFreelancersLoading] = useState(false);
 
+const fetchedRef = useRef(false);
+  
 const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
   // Profile edit state
   const [isEditing, setIsEditing] = useState(false);
@@ -89,6 +102,67 @@ const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
     .slice(0, 2);
 };
 
+
+
+
+
+
+
+
+const fetchFreelancers = async () => {
+
+ if(fetchedRef.current) return;
+
+ fetchedRef.current = true;
+
+ try{
+   setFreelancersLoading(true);
+
+   const res = await api.get('/team/freelancers',{
+       timeout: 30000  
+   });
+
+   if(res.data.success){
+      setFreelancers(res.data.data || []);
+   }
+
+ }catch(err){
+   console.error(err);
+   fetchedRef.current = false; // retry allow
+ }finally{
+   setFreelancersLoading(false);
+ }
+
+};
+
+
+
+
+const handleSendInvite = async (id) => {
+  console.log("👉 SENDING ID:", id); // ✅ ADD
+
+  try {
+    const res = await api.post('/team/invite', { memberId: id });
+
+    console.log("✅ INVITE SUCCESS:", res.data);
+
+  } catch (err) {
+    console.log("❌ INVITE ERROR FULL:", err.response?.data); // ✅ ADD
+  }
+};
+
+const handleAcceptInvite = async (id) => {
+  await api.post(`/team/invitations/${id}/accept`);
+};
+
+const handleRejectInvite = async (id) => {
+  await api.post(`/team/invitations/${id}/reject`);
+};
+
+const fetchPendingInvites = async () => {
+  const res = await api.get('/team/invitations/pending');
+  setPendingInvites(res.data.data);
+};
   // Redirect if not logged in
   useEffect(() => {
     if (!user) {
@@ -97,14 +171,14 @@ const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
   }, [user, navigate]);
 
   // Fetch dashboard data from backend
-  useEffect(() => {
-    if (user) {
-      fetchDashboardData();
-      fetchAnalyticsData();
-      fetchTeamMembers();
-    }
-  }, [user]);
-
+useEffect(() => {
+  if (user) {
+    fetchDashboardData();
+    fetchAnalyticsData();
+    fetchTeamMembers();
+    fetchPendingInvites(); // 👈 ADD THIS
+  }
+}, [user]);
   // Socket real-time connections
   useEffect(() => {
     if (!user || !socket || !isConnected) return;
@@ -296,7 +370,7 @@ const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const response = await api.get("/users/dashboard");
+      const response = await api.get("/projects/my-dashboard");
       
       if (response.data.success) {
         const data = response.data.data;
@@ -341,25 +415,35 @@ const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
   // Fetch team members
   const fetchTeamMembers = async () => {
-    try {
-      const response = await api.get('/team');
-      if (response.data.success) {
-        const members = response.data.data.members.map(m => ({
-          ...m,
-          status: m.status || "offline"
-        }));
-        setTeamMembers(members);
-        
-        // Get online status for team members
-        const onlineIds = response.data.data.members
-          .filter(m => m.status === 'online')
-          .map(m => m._id);
-        setOnlineUsers(onlineIds);
-      }
-    } catch (error) {
-      console.error('Error fetching team members:', error);
+  try {
+    const response = await api.get('/team/my-team');
+
+    console.log("🔥 TEAM API:", response.data); // debug
+
+    if (response.data.success) {
+
+      // ✅ सही data
+      const membersData = response.data.data || [];
+
+      const members = membersData.map(m => ({
+        ...m,
+        status: m.status || "offline"
+      }));
+
+      setTeamMembers(members);
+
+      // ✅ online users निकालो
+      const onlineIds = membersData
+        .filter(m => m.status === 'online')
+        .map(m => m._id);
+
+      setOnlineUsers(onlineIds);
     }
-  };
+
+  } catch (error) {
+    console.error('❌ Error fetching team members:', error);
+  }
+};
 
   // Handle logout
   const handleLogout = async () => {
@@ -553,6 +637,7 @@ const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
           <div className="flex flex-wrap gap-2 mb-8 border-b border-white/10 pb-4">
             {[
               { id: 'overview', label: 'Overview', icon: '📊' },
+               { id: 'services', label: 'Services', icon: '🧩' },
               { id: 'projects', label: 'Projects', icon: '📁' },
               { id: 'analytics', label: 'Analytics', icon: '📈' },
               { id: 'team', label: 'Team', icon: '👥' },
@@ -905,6 +990,10 @@ const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
             </Reveal>
           )}
 
+          {activeTab === 'services' && (
+  <ServiceManagerTab />
+)}
+
           {/* Analytics Tab */}
           {activeTab === 'analytics' && (
             <Reveal>
@@ -981,7 +1070,14 @@ const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <h2 className="text-2xl font-bold">Team Members</h2>
-                  <Button>Invite Member</Button>
+                  <Button
+onClick={() => {
+ setInviteModalOpen(true);
+ fetchFreelancers();
+}}
+>
+  Invite Member
+</Button>
                 </div>
 
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -1421,15 +1517,42 @@ const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
             </div>
           )}
 
-          {/* Chat Modal */}
-          {showChatModal && chatUser && (
-            <ChatModal
-              user={chatUser}
-              onClose={() => setShowChatModal(false)}
-            />
-          )}
+         
+                {/* Chat Modal */}
+      {showChatModal && chatUser && (
+        <ChatModal
+          user={chatUser}
+          onClose={() => setShowChatModal(false)}
+        />
+      )}
+
+      {/* 🔥 INVITE MODAL ADD HERE */}
+     {/* ========== MODERN INVITE MODAL ========== */}
+
+
+<InviteFreelancersModal
+      inviteModalOpen={inviteModalOpen}
+      setInviteModalOpen={setInviteModalOpen}
+      freelancers={freelancers}
+      invitedIds={invitedIds}
+      handleSendInvite={handleSendInvite}
+    loading={freelancersLoading}
+refreshFreelancers={() => {}}
+    />
+
+          
         </div>
       </div>
+      
     </div>
+    
+     
+    
+
+
   );
+
+  
 }
+
+

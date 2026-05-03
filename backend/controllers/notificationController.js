@@ -4,11 +4,8 @@ const Notification = require('../models/Notification');
 exports.getNotifications = async (req, res) => {
   try {
     const { type, isRead, page = 1, limit = 10 } = req.query;
-  const filter = {
-  $or: [
-    { user: req.user.id },
-    { user: null }
-  ]
+ const filter = {
+  user: req.user.id
 }; // ✅ FIX
     if (type) filter.type = type;
     if (isRead !== undefined) filter.isRead = isRead === 'true';

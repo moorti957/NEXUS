@@ -22,12 +22,12 @@ const getProjects = async (req, res) => {
 
     // Build filter query
     let filter = {};
-    
+
     if (status) filter.status = status;
     if (category) filter.category = category;
     if (client) filter.client = client;
     if (priority) filter.priority = priority;
-    
+
     // Search by name or description
     if (search) {
       filter.$or = [
@@ -100,6 +100,166 @@ const getProjects = async (req, res) => {
     });
   }
 };
+
+
+
+const getClientProjects = async (req, res) => {
+  try {
+
+    console.log("USER ID:", req.user._id);
+    console.log("EMAIL:", req.user.email);
+
+
+    // ===============================
+    // FIND CLIENT
+    // ===============================
+    let client = await Client.findOne({
+      userId: req.user._id
+    });
+
+    if (!client) {
+      client = await Client.findOne({
+        email: req.user.email
+      });
+    }
+
+    console.log("CLIENT FOUND:", client);
+
+
+    // no client
+    if (!client) {
+      return res.json({
+        success: true,
+        data: []
+      });
+    }
+
+
+    // ===============================
+    // GET FULL PROJECT DATA
+    // ===============================
+    const projects = await Project.find({
+      _id: { $in: client.projects }
+    })
+      .populate({
+        path: "client",
+        select: "name email company phone"
+      })
+      .populate({
+        path: "projectManager",
+        select: "name email avatar role"
+      })
+      .populate({
+        path: "teamMembers.user",
+        select: "name email avatar role"
+      })
+      .populate({
+        path: "tasks.assignedTo",
+        select: "name email avatar"
+      })
+      .populate({
+        path: "messages"
+      })
+      .populate({
+        path: "createdBy",
+        select: "name email"
+      })
+      .populate({
+        path: "updatedBy",
+        select: "name email"
+      })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    console.log(
+      "PROJECTS FOUND:",
+      projects.length
+    );
+
+
+    // ===============================
+    // RETURN FULL DATA
+    // ===============================
+    return res.json({
+      success: true,
+      data: projects
+    });
+
+
+  } catch (err) {
+
+    console.error(
+      "CLIENT PROJECT ERROR:",
+      err
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch client projects",
+      error: err.message
+    });
+
+  }
+};
+
+
+const getProjectMilestones = async (req, res) => {
+  const project =
+    await Project.findById(
+      req.params.id
+    ).select('milestones');
+
+  res.json({
+    success: true,
+    data: project.milestones || []
+  });
+};
+
+
+const getProjectTasks = async (req, res) => {
+  const project =
+    await Project.findById(
+      req.params.id
+    ).select('tasks');
+
+  res.json({
+    success: true,
+    data: project.tasks || []
+  });
+};
+
+
+
+const updateProjectProgress =
+  async (req, res) => {
+
+    const { progress } = req.body;
+
+    const project =
+      await Project.findById(
+        req.params.id
+      );
+
+    project.progress = progress;
+
+    if (progress === 100) {
+      project.status = 'Completed';
+    }
+
+    project.timeline.push({
+      event: 'Progress Updated',
+      description: `Progress updated to ${progress}%`,
+      createdBy: req.user._id
+    });
+
+    await project.save();
+
+    res.json({
+      success: true,
+      data: project
+    });
+
+  };
 
 /**
  * @desc    Get single project by ID
@@ -179,20 +339,75 @@ const createProject = async (req, res) => {
 
     const client = await Client.findById(req.body.client);
 
-if (!client) {
-  return res.status(400).json({
-    success: false,
-    message: 'Client not found'
-  });
-}
+    if (!client) {
+      return res.status(400).json({
+        success: false,
+        message: 'Client not found'
+      });
+    }
 
-const projectData = {
-  ...req.body,
-  clientName: client.name,
-  clientEmail: client.email,
-  createdBy: req.user._id,
-  projectManager: req.body.projectManager || req.user._id
-};
+    const projectData = {
+      ...req.body,
+
+      clientName: client.name,
+      clientEmail: client.email,
+
+      createdBy: req.user._id,
+
+      projectManager:
+        req.body.projectManager || req.user._id,
+
+
+      // DEFAULT PROJECT PROGRESS
+      progress: 0,
+
+      status:
+        req.body.status || 'Planning',
+
+
+      // DEFAULT MILESTONES
+      milestones: [
+        {
+          title: 'Discovery',
+          description: 'Requirement gathering',
+          completed: false
+        },
+        {
+          title: 'UI Design',
+          description: 'Design phase',
+          completed: false
+        },
+        {
+          title: 'Development',
+          description: 'Build project',
+          completed: false
+        },
+        {
+          title: 'Testing',
+          description: 'QA testing',
+          completed: false
+        },
+        {
+          title: 'Launch',
+          description: 'Project delivery',
+          completed: false
+        }
+      ],
+
+
+      // DEFAULT TASKS
+      tasks: [
+        {
+          title: 'Initial Setup',
+          completed: false
+        },
+        {
+          title: 'Design Work',
+          completed: false
+        }
+      ]
+
+    };
 
     // Create project
     const project = await Project.create(projectData);
@@ -222,32 +437,32 @@ const projectData = {
         });
       }
     }
-     
-  const manager = await User.findById(project.projectManager);
+
+    const manager = await User.findById(project.projectManager);
 
     // Create notifications for team members
-if (projectData.teamMembers && projectData.teamMembers.length > 0) {
-  for (const member of projectData.teamMembers) {
+    if (projectData.teamMembers && projectData.teamMembers.length > 0) {
+      for (const member of projectData.teamMembers) {
 
-    const user = await User.findById(member.user);
+        const user = await User.findById(member.user);
 
-    if (!user) continue;
+        if (!user) continue;
 
-    await Notification.createNotification({
-      user: user._id,
-      userEmail: user.email,
-      userName: user.name,
-      type: 'info',
-      category: 'project',
-      title: 'New Project Assignment',
-      message: `You have been added to project: ${project.name} as ${member.role}`,
-      actionUrl: `/projects/${project._id}`,
-      relatedProject: project._id,
-      priority: 'medium'
-    });
+        await Notification.createNotification({
+          user: user._id,
+          userEmail: user.email,
+          userName: user.name,
+          type: 'info',
+          category: 'project',
+          title: 'New Project Assignment',
+          message: `You have been added to project: ${project.name} as ${member.role}`,
+          actionUrl: `/projects/${project._id}`,
+          relatedProject: project._id,
+          priority: 'medium'
+        });
 
-  }
-}
+      }
+    }
 
     res.status(201).json({
       success: true,
@@ -256,7 +471,7 @@ if (projectData.teamMembers && projectData.teamMembers.length > 0) {
     });
   } catch (error) {
     console.error('Create Project Error:', error);
-    
+
     if (error.name === 'ValidationError') {
       const errors = Object.values(error.errors).map(err => ({
         field: err.path,
@@ -397,7 +612,7 @@ const updateProject = async (req, res) => {
     });
   } catch (error) {
     console.error('Update Project Error:', error);
-    
+
     if (error.name === 'ValidationError') {
       const errors = Object.values(error.errors).map(err => ({
         field: err.path,
@@ -552,10 +767,10 @@ const getProjectStats = async (req, res) => {
         status: { $ne: 'Completed' },
         deadline: { $gte: new Date(), $lte: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) }
       })
-      .select('name deadline status progress clientName')
-      .populate('client', 'name company')
-      .sort('deadline')
-      .limit(10)
+        .select('name deadline status progress clientName')
+        .populate('client', 'name company')
+        .sort('deadline')
+        .limit(10)
     ]);
 
     // Calculate completion rate
@@ -1237,26 +1452,30 @@ module.exports = {
   createProject,
   updateProject,
   deleteProject,
-  
+  getClientProjects,
+  getProjectMilestones,
+  getProjectTasks,
+  updateProjectProgress,
+
   // Statistics
   getProjectStats,
   getProjectTimeline,
-  
+
   // Team Management
   addTeamMember,
   removeTeamMember,
   updateTeamMember,
-  
+
   // Milestone Management
   addMilestone,
   updateMilestone,
   completeMilestone,
-  
+
   // Task Management
   addTask,
   updateTask,
   deleteTask,
-  
+
   // Payment Management
   addPayment
 };

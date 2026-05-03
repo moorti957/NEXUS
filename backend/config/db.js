@@ -8,15 +8,20 @@ const mongoose = require('mongoose');
 const connectDB = async () => {
   try {
     // MongoDB connection options
-    const options = {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-      autoIndex: true, // Build indexes
-      maxPoolSize: 10, // Maintain up to 10 socket connections
-      serverSelectionTimeoutMS: 5000, // Keep trying to send operations for 5 seconds
-      socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
-      family: 4, // Use IPv4, skip trying IPv6
-    };
+   const options = {
+  autoIndex: true,
+
+  maxPoolSize: 20,
+  minPoolSize: 5,
+
+  serverSelectionTimeoutMS: 10000,
+  socketTimeoutMS: 120000,
+  connectTimeoutMS: 10000,
+
+  retryWrites: true,
+
+  family: 4
+};
 
     // Check if MongoDB URI is provided
     if (!process.env.MONGODB_URI) {
@@ -41,9 +46,10 @@ const connectDB = async () => {
       console.error('🔴 MongoDB connection error:', err);
     });
 
-    mongoose.connection.on('disconnected', () => {
-      console.warn('🟡 MongoDB disconnected. Attempting to reconnect...');
-    });
+   mongoose.connection.on('disconnected', () => {
+ console.warn('🟡 MongoDB disconnected...retrying');
+ setTimeout(connectDB,5000);
+});
 
     mongoose.connection.on('reconnected', () => {
       console.log('🟢 MongoDB reconnected successfully');

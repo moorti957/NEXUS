@@ -181,26 +181,32 @@ const projectSchema = new mongoose.Schema({
   },
 
   teamMembers: {
-  type: [{
-    user: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User'
-    },
-    role: {
-      type: String,
-      enum: ['Lead', 'Developer', 'Designer', 'Strategist', 'Tester']
-    },
-    assignedAt: {
-      type: Date,
-      default: Date.now
-    },
-    hoursAllocated: {
-      type: Number,
-      default: 0
-    }
+    type: [{
+      user: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+      },
+      role: {
+        type: String,
+        enum: ['Lead', 'Developer', 'Designer', 'Strategist', 'Tester']
+      },
+      assignedAt: {
+        type: Date,
+        default: Date.now
+      },
+      hoursAllocated: {
+        type: Number,
+        default: 0
+      }
+    }],
+    default: []
+  },
+
+  // NEW: Simple array of user IDs for fast filtering (freelancer projects)
+  members: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
   }],
-  default: []
-},
 
   // ===========================================
   // TECHNICAL DETAILS
@@ -235,7 +241,6 @@ const projectSchema = new mongoose.Schema({
   thumbnail: {
     type: String,
     default: function() {
-      // Default thumbnail based on category
       const thumbnails = {
         'Web Development': '💻',
         'Mobile App': '📱',
@@ -284,36 +289,36 @@ const projectSchema = new mongoose.Schema({
   // TASKS & MILESTONES
   // ===========================================
   milestones: {
-  type: [{
-    title: String,
-    description: String,
-    dueDate: Date,
-    completedAt: Date,
-    status: {
-      type: String,
-      enum: ['Pending','In Progress','Completed'],
-      default: 'Pending'
-    }
-  }],
-  default: []
-},
+    type: [{
+      title: String,
+      description: String,
+      dueDate: Date,
+      completedAt: Date,
+      status: {
+        type: String,
+        enum: ['Pending','In Progress','Completed'],
+        default: 'Pending'
+      }
+    }],
+    default: []
+  },
 
   tasks: {
-  type: [{
-    title: String,
-    description: String,
-    assignedTo: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User'
-    },
-    status: {
-      type: String,
-      enum: ['Todo','In Progress','Review','Done'],
-      default: 'Todo'
-    }
-  }],
-  default: []
-},
+    type: [{
+      title: String,
+      description: String,
+      assignedTo: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+      },
+      status: {
+        type: String,
+        enum: ['Todo','In Progress','Review','Done'],
+        default: 'Todo'
+      }
+    }],
+    default: []
+  },
 
   // ===========================================
   // COMMUNICATION
@@ -459,12 +464,12 @@ projectSchema.index({ category: 1 });
 projectSchema.index({ deadline: 1 });
 projectSchema.index({ featured: 1 });
 projectSchema.index({ 'teamMembers.user': 1 });
+projectSchema.index({ members: 1 });        // NEW: index for members array
+projectSchema.index({ createdBy: 1 });     // NEW: index for createdBy
 
 // ===========================================
-// VIRTUAL PROPERTIES
+// VIRTUAL PROPERTIES (unchanged)
 // ===========================================
-
-// Get project duration in days
 projectSchema.virtual('duration').get(function() {
   const start = new Date(this.startDate);
   const end = this.completedAt || new Date();
@@ -473,12 +478,10 @@ projectSchema.virtual('duration').get(function() {
   return diffDays;
 });
 
-// Check if project is overdue
 projectSchema.virtual('isOverdue').get(function() {
   return this.status !== 'Completed' && new Date() > this.deadline;
 });
 
-// Get days remaining
 projectSchema.virtual('daysRemaining').get(function() {
   if (this.status === 'Completed') return 0;
   const diffTime = this.deadline - new Date();
@@ -490,7 +493,6 @@ projectSchema.virtual('teamCount').get(function() {
   return (this.teamMembers || []).length;
 });
 
-// Get completion percentage
 projectSchema.virtual('completionPercentage').get(function() {
   if (this.status === 'Completed') return 100;
   if (this.status === 'Planning') return 10;
@@ -499,42 +501,27 @@ projectSchema.virtual('completionPercentage').get(function() {
   return this.progress;
 });
 
-// Get remaining budget
 projectSchema.virtual('remainingBudget').get(function() {
   return this.budget - this.totalPaid;
 });
 
-// Get milestone progress
 projectSchema.virtual('milestoneProgress').get(function() {
-
   const milestones = this.milestones || [];
-
   if (!milestones.length) return 0;
-
   const completed = milestones.filter(m => m.status === 'Completed').length;
-
   return Math.round((completed / milestones.length) * 100);
-
 });
 
-// Get task completion
 projectSchema.virtual('taskCompletion').get(function() {
-
   const tasks = this.tasks || [];
-
   if (!tasks.length) return 0;
-
   const completed = tasks.filter(t => t.status === 'Done').length;
-
   return Math.round((completed / tasks.length) * 100);
-
 });
 
 // ===========================================
-// PRE-SAVE MIDDLEWARE
+// PRE-SAVE MIDDLEWARE (UPDATED)
 // ===========================================
-
-// Update timestamps and calculate derived fields
 projectSchema.pre('save', function(next) {
   this.updatedAt = Date.now();
 
@@ -550,10 +537,15 @@ projectSchema.pre('save', function(next) {
     this.progress = Math.round((milestoneProgress + taskProgress) / 2);
   }
 
+  // NEW: Ensure the creator is included in the members array for access control
+  if (this.createdBy && !this.members.includes(this.createdBy)) {
+    this.members.push(this.createdBy);
+  }
+
   next();
 });
 
-// Auto-populate client name and email
+// Auto-populate client name and email (unchanged)
 projectSchema.pre('save', async function(next) {
   if (this.isModified('client')) {
     const Client = mongoose.model('Client');
@@ -568,114 +560,97 @@ projectSchema.pre('save', async function(next) {
 });
 
 // ===========================================
-// INSTANCE METHODS
+// INSTANCE METHODS (UPDATED)
 // ===========================================
-
-// Update project progress
 projectSchema.methods.updateProgress = async function() {
   if ((this.milestones || []).length > 0) {
-
-  const completed = this.milestones.filter(
-    m => m.status === 'Completed'
-  ).length;
-
-  this.progress = Math.round(
-    (completed / this.milestones.length) * 100
-  );
-
-}
-  
+    const completed = this.milestones.filter(m => m.status === 'Completed').length;
+    this.progress = Math.round((completed / this.milestones.length) * 100);
+  }
   if (this.progress === 100) {
     this.status = 'Completed';
     this.completedAt = Date.now();
   }
-  
   return this.save();
 };
 
-// Add team member
+// UPDATED: Add team member also to `members` array
 projectSchema.methods.addTeamMember = async function(userId, role, hours) {
+  // Add to teamMembers (detailed)
   this.teamMembers.push({
     user: userId,
     role,
     hoursAllocated: hours || 0,
     assignedAt: Date.now()
   });
-  
-  // Add timeline event
+  // Add to simple members array if not already present
+  if (!this.members.includes(userId)) {
+    this.members.push(userId);
+  }
   this.timeline.push({
     event: 'Team Member Added',
     description: `New team member added with role: ${role}`,
     createdAt: Date.now()
   });
-  
   return this.save();
 };
 
-// Remove team member
+// UPDATED: Remove team member from both arrays
 projectSchema.methods.removeTeamMember = async function(userId) {
   this.teamMembers = this.teamMembers.filter(m => m.user.toString() !== userId.toString());
-  
+  this.members = this.members.filter(id => id.toString() !== userId.toString());
   this.timeline.push({
     event: 'Team Member Removed',
     description: 'Team member removed from project',
     createdAt: Date.now()
   });
-  
   return this.save();
 };
 
-// Add milestone
+// Add milestone (unchanged)
 projectSchema.methods.addMilestone = async function(milestoneData) {
   this.milestones.push(milestoneData);
-  
   this.timeline.push({
     event: 'Milestone Added',
     description: `New milestone: ${milestoneData.title}`,
     createdAt: Date.now()
   });
-  
   return this.save();
 };
 
-// Complete milestone
+// Complete milestone (unchanged)
 projectSchema.methods.completeMilestone = async function(milestoneId) {
   const milestone = this.milestones.id(milestoneId);
   if (milestone) {
     milestone.status = 'Completed';
     milestone.completedAt = Date.now();
-    
     this.timeline.push({
       event: 'Milestone Completed',
       description: `Milestone completed: ${milestone.title}`,
       createdAt: Date.now()
     });
   }
-  
   await this.updateProgress();
   return this.save();
 };
 
-// Add payment
+// Add payment (unchanged)
 projectSchema.methods.addPayment = async function(amount) {
   this.totalPaid += amount;
-  
   if (this.totalPaid >= this.budget) {
     this.paymentStatus = 'Paid';
   } else if (this.totalPaid > 0) {
     this.paymentStatus = 'Partial';
   }
-  
   this.timeline.push({
     event: 'Payment Received',
     description: `Payment of ${this.currency} ${amount} received`,
     createdAt: Date.now()
   });
-  
   return this.save();
 };
 
-// Add timeline event
+// Add timeline event (unchanged)
 projectSchema.methods.addTimelineEvent = async function(event, description) {
   this.timeline.push({
     event,
@@ -683,15 +658,12 @@ projectSchema.methods.addTimelineEvent = async function(event, description) {
     createdBy: this.projectManager,
     createdAt: Date.now()
   });
-  
   return this.save();
 };
 
 // ===========================================
-// STATIC METHODS
+// STATIC METHODS (UPDATED for freelancer filtering)
 // ===========================================
-
-// Get projects by status
 projectSchema.statics.getByStatus = async function(status) {
   return this.find({ status })
     .populate('client', 'name company')
@@ -699,36 +671,41 @@ projectSchema.statics.getByStatus = async function(status) {
     .sort('-createdAt');
 };
 
-// Get projects by client
 projectSchema.statics.getByClient = async function(clientId) {
   return this.find({ client: clientId })
     .populate('projectManager', 'name')
     .sort('-createdAt');
 };
 
-// Get projects by team member
+// UPDATED: Get projects where a user is either creator or member
 projectSchema.statics.getByTeamMember = async function(userId) {
-  return this.find({ 'teamMembers.user': userId })
-    .populate('client', 'name')
-    .populate('projectManager', 'name');
+  return this.find({
+    $or: [
+      { createdBy: userId },
+      { members: userId }
+    ]
+  })
+  .populate('client', 'name')
+  .populate('projectManager', 'name')
+  .populate('createdBy', 'name email');
 };
 
-// Get dashboard stats
-projectSchema.statics.getDashboardStats = async function() {
-  const total = await this.countDocuments({ isActive: true });
-  const active = await this.countDocuments({ status: 'In Progress' });
-  const completed = await this.countDocuments({ status: 'Completed' });
-  const planning = await this.countDocuments({ status: 'Planning' });
-  const review = await this.countDocuments({ status: 'Review' });
-  const onHold = await this.countDocuments({ status: 'On Hold' });
+// Dashboard stats (unchanged – but can be filtered later)
+projectSchema.statics.getDashboardStats = async function(filter = {}) {
+  const total = await this.countDocuments({ isActive: true, ...filter });
+  const active = await this.countDocuments({ status: 'In Progress', ...filter });
+  const completed = await this.countDocuments({ status: 'Completed', ...filter });
+  const planning = await this.countDocuments({ status: 'Planning', ...filter });
+  const review = await this.countDocuments({ status: 'Review', ...filter });
+  const onHold = await this.countDocuments({ status: 'On Hold', ...filter });
   const overdue = await this.countDocuments({ 
     status: { $ne: 'Completed' },
-    deadline: { $lt: new Date() }
+    deadline: { $lt: new Date() },
+    ...filter
   });
 
-  // Get revenue stats
   const earnings = await this.aggregate([
-    { $match: { status: 'Completed' } },
+    { $match: { status: 'Completed', ...filter } },
     { $group: { 
       _id: null, 
       total: { $sum: '$budget' },
@@ -736,8 +713,8 @@ projectSchema.statics.getDashboardStats = async function() {
     }}
   ]);
 
-  // Get category distribution
   const categories = await this.aggregate([
+    { $match: filter },
     { $group: { _id: '$category', count: { $sum: 1 } } }
   ]);
 
@@ -755,15 +732,16 @@ projectSchema.statics.getDashboardStats = async function() {
   };
 };
 
-// Get monthly stats for charts
-projectSchema.statics.getMonthlyStats = async function(year) {
+// Monthly stats (unchanged – can be filtered)
+projectSchema.statics.getMonthlyStats = async function(year, filter = {}) {
   return this.aggregate([
     {
       $match: {
         createdAt: {
           $gte: new Date(`${year}-01-01`),
           $lte: new Date(`${year}-12-31`)
-        }
+        },
+        ...filter
       }
     },
     {
@@ -780,17 +758,14 @@ projectSchema.statics.getMonthlyStats = async function(year) {
   ]);
 };
 
-// Get upcoming deadlines
-projectSchema.statics.getUpcomingDeadlines = async function(days = 7) {
+// Get upcoming deadlines (unchanged – can be filtered)
+projectSchema.statics.getUpcomingDeadlines = async function(days = 7, filter = {}) {
   const futureDate = new Date();
   futureDate.setDate(futureDate.getDate() + days);
-
   return this.find({
     status: { $ne: 'Completed' },
-    deadline: {
-      $gte: new Date(),
-      $lte: futureDate
-    }
+    deadline: { $gte: new Date(), $lte: futureDate },
+    ...filter
   })
   .populate('client', 'name company')
   .populate('projectManager', 'name')
@@ -798,10 +773,8 @@ projectSchema.statics.getUpcomingDeadlines = async function(days = 7) {
 };
 
 // ===========================================
-// QUERY MIDDLEWARE
+// QUERY MIDDLEWARE (unchanged)
 // ===========================================
-
-// Populate references by default
 projectSchema.pre(/^find/, function(next) {
   next();
 });
