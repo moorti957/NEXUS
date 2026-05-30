@@ -175,7 +175,7 @@ case 'rating':
 export const projects = {
   ecommerce: {
     title: 'E-Commerce Platform',
-    liveUrl: 'https://jay-shree-kisan-com-bv2o.vercel.app/', // ✅ add this
+    liveUrl: 'https://jay-shree-kisan-com.vercel.app/', // ✅ add this
     slug: 'ecommerce-platform',
     shortDesc: 'A modern, scalable online store with seamless shopping experience.',
     heroImage: ecommerceImg,
