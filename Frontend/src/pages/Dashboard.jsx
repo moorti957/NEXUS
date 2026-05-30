@@ -12,6 +12,22 @@ import { useNotifications } from "../context/NotificationContext";
 import ChatModal from '../components/chat/ChatModal';
 import { InviteFreelancersModal } from '../components/InviteFreelancersModal';
 
+import {
+  FiHome,
+  FiFolder,
+  FiBarChart2,
+  FiUsers,
+  FiUser,
+  FiSettings,
+  FiBell,
+  FiGrid,
+  FiZap,
+  FiCheckCircle,
+  FiClock,
+  FiDollarSign
+} from "react-icons/fi";
+
+
 
 
 
@@ -48,7 +64,7 @@ export default function Dashboard() {
 
   // State management
   const [activeTab, setActiveTab] = useState('overview');
-  
+
   const [loading, setLoading] = useState(false);
   const [dashboardData, setDashboardData] = useState(null);
   const [stats, setStats] = useState({});
@@ -57,12 +73,12 @@ export default function Dashboard() {
   const [selectedMember, setSelectedMember] = useState(null);
   const [showMemberProfile, setShowMemberProfile] = useState(false);
   const [freelancers, setFreelancers] = useState([]);
-const [pendingInvites, setPendingInvites] = useState([]);
-const [inviteModalOpen, setInviteModalOpen] = useState(false);
+  const [pendingInvites, setPendingInvites] = useState([]);
+  const [inviteModalOpen, setInviteModalOpen] = useState(false);
 
   const [chatUser, setChatUser] = useState(null);
   const [showChatModal, setShowChatModal] = useState(false);
-  
+
   const [activityData, setActivityData] = useState([]);
   const [invitedIds, setInvitedIds] = useState([]);
   const [analytics, setAnalytics] = useState({});
@@ -70,9 +86,9 @@ const [inviteModalOpen, setInviteModalOpen] = useState(false);
   const [typingUsers, setTypingUsers] = useState({});
   const [freelancersLoading, setFreelancersLoading] = useState(false);
 
-const fetchedRef = useRef(false);
-  
-const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+  const fetchedRef = useRef(false);
+
+  const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
   // Profile edit state
   const [isEditing, setIsEditing] = useState(false);
   const [profileData, setProfileData] = useState({
@@ -92,77 +108,77 @@ const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
   });
 
   const getInitials = (name) => {
-  if (!name) return "U";
+    if (!name) return "U";
 
-  return name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-};
-
-
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
 
 
 
 
 
 
-const fetchFreelancers = async () => {
-
- if(fetchedRef.current) return;
-
- fetchedRef.current = true;
-
- try{
-   setFreelancersLoading(true);
-
-   const res = await api.get('/team/freelancers',{
-       timeout: 30000  
-   });
-
-   if(res.data.success){
-      setFreelancers(res.data.data || []);
-   }
-
- }catch(err){
-   console.error(err);
-   fetchedRef.current = false; // retry allow
- }finally{
-   setFreelancersLoading(false);
- }
-
-};
 
 
+  const fetchFreelancers = async () => {
+
+    if (fetchedRef.current) return;
+
+    fetchedRef.current = true;
+
+    try {
+      setFreelancersLoading(true);
+
+      const res = await api.get('/team/freelancers', {
+        timeout: 30000
+      });
+
+      if (res.data.success) {
+        setFreelancers(res.data.data || []);
+      }
+
+    } catch (err) {
+      console.error(err);
+      fetchedRef.current = false; // retry allow
+    } finally {
+      setFreelancersLoading(false);
+    }
+
+  };
 
 
-const handleSendInvite = async (id) => {
-  console.log("👉 SENDING ID:", id); // ✅ ADD
 
-  try {
-    const res = await api.post('/team/invite', { memberId: id });
 
-    console.log("✅ INVITE SUCCESS:", res.data);
+  const handleSendInvite = async (id) => {
+    console.log("👉 SENDING ID:", id); // ✅ ADD
 
-  } catch (err) {
-    console.log("❌ INVITE ERROR FULL:", err.response?.data); // ✅ ADD
-  }
-};
+    try {
+      const res = await api.post('/team/invite', { memberId: id });
 
-const handleAcceptInvite = async (id) => {
-  await api.post(`/team/invitations/${id}/accept`);
-};
+      console.log("✅ INVITE SUCCESS:", res.data);
 
-const handleRejectInvite = async (id) => {
-  await api.post(`/team/invitations/${id}/reject`);
-};
+    } catch (err) {
+      console.log("❌ INVITE ERROR FULL:", err.response?.data); // ✅ ADD
+    }
+  };
 
-const fetchPendingInvites = async () => {
-  const res = await api.get('/team/invitations/pending');
-  setPendingInvites(res.data.data);
-};
+  const handleAcceptInvite = async (id) => {
+    await api.post(`/team/invitations/${id}/accept`);
+  };
+
+  const handleRejectInvite = async (id) => {
+    await api.post(`/team/invitations/${id}/reject`);
+  };
+
+  const fetchPendingInvites = async () => {
+    const res = await api.get('/team/invitations/pending');
+    setPendingInvites(res.data.data);
+  };
   // Redirect if not logged in
   useEffect(() => {
     if (!user) {
@@ -171,14 +187,14 @@ const fetchPendingInvites = async () => {
   }, [user, navigate]);
 
   // Fetch dashboard data from backend
-useEffect(() => {
-  if (user) {
-    fetchDashboardData();
-    fetchAnalyticsData();
-    fetchTeamMembers();
-    fetchPendingInvites(); // 👈 ADD THIS
-  }
-}, [user]);
+  useEffect(() => {
+    if (user) {
+      fetchDashboardData();
+      fetchAnalyticsData();
+      fetchTeamMembers();
+      fetchPendingInvites(); // 👈 ADD THIS
+    }
+  }, [user]);
   // Socket real-time connections
   useEffect(() => {
     if (!user || !socket || !isConnected) return;
@@ -299,32 +315,32 @@ useEffect(() => {
 
   // Handle real-time updates
   const handleProjectUpdate = (data) => {
-    setRecentProjects(prev => 
+    setRecentProjects(prev =>
       prev.map(p => p._id === data.projectId ? { ...p, ...data.updates } : p)
     );
-    
+
     if (data.updates.progress) {
       showToast(`Project progress updated to ${data.updates.progress}%`, 'info');
     }
   };
 
   const getAvatarUrlFixed = (avatar, name) => {
-  if (!avatar) {
-    return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}`;
-  }
+    if (!avatar) {
+      return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}`;
+    }
 
-  if (avatar.startsWith("http")) {
-    return avatar;
-  }
+    if (avatar.startsWith("http")) {
+      return avatar;
+    }
 
-  return `${BASE_URL}${avatar}`;
-};
+    return `${BASE_URL}${avatar}`;
+  };
 
   const handleProjectStatusUpdate = (data) => {
-    setRecentProjects(prev => 
+    setRecentProjects(prev =>
       prev.map(p => p._id === data.projectId ? { ...p, status: data.newStatus } : p)
     );
-    
+
     showToast(`Project ${data.projectName || ''} status: ${data.oldStatus} → ${data.newStatus}`, 'info');
   };
 
@@ -354,7 +370,7 @@ useEffect(() => {
   };
 
   const handleUserStatusChange = (data) => {
-    setTeamMembers(prev => 
+    setTeamMembers(prev =>
       prev.map(m => m._id === data.userId ? { ...m, status: data.newStatus } : m)
     );
   };
@@ -371,14 +387,14 @@ useEffect(() => {
     try {
       setLoading(true);
       const response = await api.get("/projects/my-dashboard");
-      
+
       if (response.data.success) {
         const data = response.data.data;
         setDashboardData(data);
         setStats(data.stats || {});
         setRecentProjects(data.recentProjects || []);
         setActivityData(data.activityData || [40, 65, 80, 55, 70, 85, 60]);
-        
+
         // Update profile data with real data
         setProfileData(prev => ({
           ...prev,
@@ -415,35 +431,35 @@ useEffect(() => {
 
   // Fetch team members
   const fetchTeamMembers = async () => {
-  try {
-    const response = await api.get('/team/my-team');
+    try {
+      const response = await api.get('/team/my-team');
 
-    console.log("🔥 TEAM API:", response.data); // debug
+      console.log("🔥 TEAM API:", response.data); // debug
 
-    if (response.data.success) {
+      if (response.data.success) {
 
-      // ✅ सही data
-      const membersData = response.data.data || [];
+        // ✅ सही data
+        const membersData = response.data.data || [];
 
-      const members = membersData.map(m => ({
-        ...m,
-        status: m.status || "offline"
-      }));
+        const members = membersData.map(m => ({
+          ...m,
+          status: m.status || "offline"
+        }));
 
-      setTeamMembers(members);
+        setTeamMembers(members);
 
-      // ✅ online users निकालो
-      const onlineIds = membersData
-        .filter(m => m.status === 'online')
-        .map(m => m._id);
+        // ✅ online users निकालो
+        const onlineIds = membersData
+          .filter(m => m.status === 'online')
+          .map(m => m._id);
 
-      setOnlineUsers(onlineIds);
+        setOnlineUsers(onlineIds);
+      }
+
+    } catch (error) {
+      console.error('❌ Error fetching team members:', error);
     }
-
-  } catch (error) {
-    console.error('❌ Error fetching team members:', error);
-  }
-};
+  };
 
   // Handle logout
   const handleLogout = async () => {
@@ -522,7 +538,7 @@ useEffect(() => {
   const handleNotificationToggle = async (key) => {
     try {
       const newValue = !profileData.notifications[key];
-      
+
       const response = await api.put('/profile/notifications', {
         ...profileData.notifications,
         [key]: newValue
@@ -567,13 +583,13 @@ useEffect(() => {
 
   // Handle notification click: mark as read and optionally navigate to detail
   const handleNotificationClick = async (notification) => {
-  if (!notification.isRead) {
-    await markAsRead(notification._id);
-  }
+    if (!notification.isRead) {
+      await markAsRead(notification._id);
+    }
 
-  // ✅ ये ADD करो
-  navigate('/notifications');
-};
+    // ✅ ये ADD करो
+    navigate('/notifications');
+  };
 
   if (!user) {
     return null; // Will redirect
@@ -607,7 +623,7 @@ useEffect(() => {
               </p>
             </Reveal>
           </div>
-          
+
           <Reveal delay={400}>
             <div className="flex gap-4">
               <Button
@@ -636,14 +652,14 @@ useEffect(() => {
         <Reveal delay={600}>
           <div className="flex flex-wrap gap-2 mb-8 border-b border-white/10 pb-4">
             {[
-              { id: 'overview', label: 'Overview', icon: '📊' },
-               { id: 'services', label: 'Services', icon: '🧩' },
-              { id: 'projects', label: 'Projects', icon: '📁' },
-              { id: 'analytics', label: 'Analytics', icon: '📈' },
-              { id: 'team', label: 'Team', icon: '👥' },
-              { id: 'profile', label: 'Profile', icon: '👤' },
-              { id: 'settings', label: 'Settings', icon: '⚙️' },
-              { id: 'notifications', label: 'Notifications', icon: '🔔' },
+              { id: 'overview', label: 'Overview', icon: <FiHome /> },
+              { id: 'services', label: 'Services', icon: <FiGrid /> },
+              { id: 'projects', label: 'Projects', icon: <FiFolder /> },
+              { id: 'analytics', label: 'Analytics', icon: <FiBarChart2 /> },
+              { id: 'team', label: 'Team', icon: <FiUsers /> },
+              { id: 'profile', label: 'Profile', icon: <FiUser /> },
+              { id: 'settings', label: 'Settings', icon: <FiSettings /> },
+              { id: 'notifications', label: 'Notifications', icon: <FiBell /> },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -677,15 +693,44 @@ useEffect(() => {
               {/* Stats Grid */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                 {[
-                  { label: 'Total Projects', value: stats.totalProjects || 0, icon: '📁', change: stats.projectsGrowth || '+0%', gradient: 'from-indigo-500 to-purple-600' },
-                  { label: 'Active Projects', value: stats.activeProjects || 0, icon: '⚡', change: stats.activeGrowth || '+0%', gradient: 'from-purple-500 to-pink-600' },
-                  { label: 'Completed', value: stats.completedProjects || 0, icon: '✅', change: stats.completedGrowth || '+0%', gradient: 'from-pink-500 to-orange-600' },
-                  { label: 'Pending Tasks', value: stats.pendingTasks || 0, icon: '⏳', change: stats.pendingChange || '0', gradient: 'from-orange-500 to-yellow-600' },
-                ].map((stat, index) => (
+  {
+    label: 'Total Projects',
+    value: stats.totalProjects || 0,
+    icon: <FiFolder />,
+    change: stats.projectsGrowth || '+0%',
+    gradient: 'from-indigo-500 to-purple-600'
+  },
+
+  {
+    label: 'Active Projects',
+    value: stats.activeProjects || 0,
+    icon: <FiZap />,
+    change: stats.activeGrowth || '+0%',
+    gradient: 'from-purple-500 to-pink-600'
+  },
+
+  {
+    label: 'Completed',
+    value: stats.completedProjects || 0,
+    icon: <FiCheckCircle />,
+    change: stats.completedGrowth || '+0%',
+    gradient: 'from-pink-500 to-orange-600'
+  },
+
+  {
+    label: 'Pending Tasks',
+    value: stats.pendingTasks || 0,
+    icon: <FiClock />,
+    change: stats.pendingChange || '0',
+    gradient: 'from-orange-500 to-yellow-600'
+  },
+].map((stat, index) => (
                   <Reveal key={stat.label} delay={index * 100} type="scale">
                     <div className="p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-indigo-500/30 transition-all">
                       <div className="flex items-center justify-between mb-4">
-                        <span className="text-2xl">{stat.icon}</span>
+                        <span className="text-3xl text-white">
+  {stat.icon}
+</span>
                         <span className={`text-sm ${stat.change.startsWith('+') ? 'text-green-400' : 'text-red-400'}`}>
                           {stat.change}
                         </span>
@@ -709,7 +754,7 @@ useEffect(() => {
                       {activityData.map((value, index) => (
                         <div key={index} className="flex-1 flex flex-col items-center gap-2 group">
                           <div className="relative w-full">
-                            <div 
+                            <div
                               className="w-full bg-gradient-to-t from-indigo-500 to-purple-600 rounded-t-lg transition-all group-hover:from-purple-500 group-hover:to-pink-600"
                               style={{ height: `${value * 1.5}px` }}
                             >
@@ -730,7 +775,7 @@ useEffect(() => {
                   <div className="p-6 rounded-2xl bg-white/5 border border-white/10">
                     <div className="flex items-center justify-between mb-6">
                       <h3 className="text-lg font-bold">Recent Projects</h3>
-                      <button 
+                      <button
                         onClick={() => setActiveTab('projects')}
                         className="text-sm text-indigo-400 hover:text-indigo-300"
                       >
@@ -739,8 +784,8 @@ useEffect(() => {
                     </div>
                     <div className="space-y-4">
                       {recentProjects.slice(0, 4).map((project) => (
-                        <div 
-                          key={project._id} 
+                        <div
+                          key={project._id}
                           className="flex items-center justify-between p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-all cursor-pointer"
                           onClick={() => handleViewProject(project._id)}
                         >
@@ -759,7 +804,7 @@ useEffect(() => {
                               {project.status}
                             </span>
                             <div className="w-24 h-1.5 bg-white/10 rounded-full overflow-hidden">
-                              <div 
+                              <div
                                 className="h-full bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full"
                                 style={{ width: `${project.progress}%` }}
                               />
@@ -779,7 +824,7 @@ useEffect(() => {
                   <div className="p-6 rounded-2xl bg-white/5 border border-white/10">
                     <div className="flex items-center justify-between mb-6">
                       <h3 className="text-lg font-bold">Team Members</h3>
-                      <button 
+                      <button
                         onClick={() => setActiveTab('team')}
                         className="text-sm text-indigo-400 hover:text-indigo-300"
                       >
@@ -797,14 +842,14 @@ useEffect(() => {
                                 flex items-center justify-center text-sm font-bold
                                 overflow-hidden
                               ">
-                          {member.avatar ? (
-  <img
-   src={getAvatarUrlFixed(member.avatar, member.name)}
-    alt={member.name}
-    className="w-full h-full object-cover rounded-full"
-    onError={(e) => {
-      e.target.style.display = "none";
-      e.target.parentNode.innerHTML = `
+                                {member.avatar ? (
+                                  <img
+                                    src={getAvatarUrlFixed(member.avatar, member.name)}
+                                    alt={member.name}
+                                    className="w-full h-full object-cover rounded-full"
+                                    onError={(e) => {
+                                      e.target.style.display = "none";
+                                      e.target.parentNode.innerHTML = `
         <div style="
           display:flex;
           align-items:center;
@@ -817,20 +862,19 @@ useEffect(() => {
           ${getInitials(member.name)}
         </div>
       `;
-    }}
-  />
-) : (
-  <div className="w-full h-full flex items-center justify-center text-white font-bold text-sm">
-    {getInitials(member.name)}
-  </div>
-)}
+                                    }}
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center text-white font-bold text-sm">
+                                    {getInitials(member.name)}
+                                  </div>
+                                )}
                               </div>
                               <span
-                                className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-[#13131a] ${
-                                  onlineUsers.includes(member._id)
-                                    ? "bg-green-500 animate-pulse"
-                                    : "bg-gray-500"
-                                }`}
+                                className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-[#13131a] ${onlineUsers.includes(member._id)
+                                  ? "bg-green-500 animate-pulse"
+                                  : "bg-gray-500"
+                                  }`}
                               />
                             </div>
                             <div>
@@ -838,7 +882,7 @@ useEffect(() => {
                               <div className="text-xs text-gray-500">{member.role}</div>
                             </div>
                           </div>
-                          <button 
+                          <button
                             onClick={() => openChat(member)}
                             className="text-sm text-indigo-400 hover:text-indigo-300"
                           >
@@ -847,7 +891,7 @@ useEffect(() => {
                         </div>
                       ))}
                     </div>
-                    
+
                     {/* Typing indicators */}
                     {Object.values(typingUsers).filter(Boolean).length > 0 && (
                       <div className="mt-4 text-xs text-gray-400 italic">
@@ -862,7 +906,7 @@ useEffect(() => {
                   <div className="p-6 rounded-2xl bg-white/5 border border-white/10">
                     <div className="flex items-center justify-between mb-6">
                       <h3 className="text-lg font-bold">Recent Notifications</h3>
-                      <button 
+                      <button
                         onClick={handleMarkAllReadLocal}
                         className="text-sm text-indigo-400 hover:text-indigo-300"
                       >
@@ -871,11 +915,10 @@ useEffect(() => {
                     </div>
                     <div className="space-y-4">
                       {notifications.slice(0, 4).map((notification) => (
-                        <div 
-                          key={notification._id} 
-                          className={`flex items-start gap-3 p-3 rounded-xl transition-all ${
-                            notification.isRead ? 'bg-white/5' : 'bg-indigo-500/10'
-                          } hover:bg-white/10 cursor-pointer`}
+                        <div
+                          key={notification._id}
+                          className={`flex items-start gap-3 p-3 rounded-xl transition-all ${notification.isRead ? 'bg-white/5' : 'bg-indigo-500/10'
+                            } hover:bg-white/10 cursor-pointer`}
                           onClick={() => handleNotificationClick(notification)}
                         >
                           <span className={`
@@ -936,14 +979,14 @@ useEffect(() => {
                   <h2 className="text-2xl font-bold">All Projects</h2>
                   <Button onClick={handleCreateProject}>New Project</Button>
                 </div>
-                
+
                 <div className="grid gap-4">
                   {recentProjects.length === 0 ? (
                     <p className="text-gray-400">No projects found</p>
                   ) : (
                     recentProjects.map((project) => (
-                      <div 
-                        key={project._id} 
+                      <div
+                        key={project._id}
                         className="p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-indigo-500/30 transition-all cursor-pointer"
                         onClick={() => handleViewProject(project._id)}
                       >
@@ -973,7 +1016,7 @@ useEffect(() => {
                                 <span>{project.progress}%</span>
                               </div>
                               <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                                <div 
+                                <div
                                   className="h-full bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full"
                                   style={{ width: `${project.progress}%` }}
                                 />
@@ -991,22 +1034,39 @@ useEffect(() => {
           )}
 
           {activeTab === 'services' && (
-  <ServiceManagerTab />
-)}
+            <ServiceManagerTab />
+          )}
 
           {/* Analytics Tab */}
           {activeTab === 'analytics' && (
             <Reveal>
               <div className="space-y-8">
                 <h2 className="text-2xl font-bold">Analytics Overview</h2>
-                
+
                 {/* Stats */}
                 <div className="grid md:grid-cols-3 gap-6">
                   {[
-                    { label: 'Total Revenue', value: `$${analytics.revenue?.total?.toLocaleString() || '0'}`, change: analytics.revenue?.growth || '+0%', icon: '💰' },
-                    { label: 'Active Users', value: analytics.traffic?.uniqueVisitors?.toLocaleString() || '0', change: analytics.traffic?.growth || '+0%', icon: '👥' },
-                    { label: 'Conversion Rate', value: `${analytics.conversions?.rate || '0'}%`, change: analytics.conversions?.growth || '+0%', icon: '📊' },
-                  ].map((stat) => (
+  {
+    label: 'Total Revenue',
+    value: `$${analytics.revenue?.total?.toLocaleString() || '0'}`,
+    change: analytics.revenue?.growth || '+0%',
+    icon: <FiDollarSign />
+  },
+
+  {
+    label: 'Active Users',
+    value: analytics.traffic?.uniqueVisitors?.toLocaleString() || '0',
+    change: analytics.traffic?.growth || '+0%',
+    icon: <FiUsers />
+  },
+
+  {
+    label: 'Conversion Rate',
+    value: `${analytics.conversions?.rate || '0'}%`,
+    change: analytics.conversions?.growth || '+0%',
+    icon: <FiBarChart2 />
+  },
+].map((stat) => (
                     <div key={stat.label} className="p-6 rounded-2xl bg-white/5 border border-white/10">
                       <div className="flex items-center justify-between mb-4">
                         <span className="text-2xl">{stat.icon}</span>
@@ -1030,7 +1090,7 @@ useEffect(() => {
                             <span>{Math.round(source.percentage)}%</span>
                           </div>
                           <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                            <div 
+                            <div
                               className="h-full bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full"
                               style={{ width: `${source.percentage}%` }}
                             />
@@ -1050,7 +1110,7 @@ useEffect(() => {
                             <span>{cat.count} projects</span>
                           </div>
                           <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                            <div 
+                            <div
                               className="h-full bg-gradient-to-r from-purple-500 to-pink-600 rounded-full"
                               style={{ width: `${(cat.count / analytics.projects.total) * 100}%` }}
                             />
@@ -1071,13 +1131,13 @@ useEffect(() => {
                 <div className="flex items-center justify-between">
                   <h2 className="text-2xl font-bold">Team Members</h2>
                   <Button
-onClick={() => {
- setInviteModalOpen(true);
- fetchFreelancers();
-}}
->
-  Invite Member
-</Button>
+                    onClick={() => {
+                      setInviteModalOpen(true);
+                      fetchFreelancers();
+                    }}
+                  >
+                    Invite Member
+                  </Button>
                 </div>
 
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -1091,14 +1151,14 @@ onClick={() => {
                             flex items-center justify-center text-sm font-bold
                             overflow-hidden
                           ">
-                           {member.avatar ? (
-  <img
-    src={getAvatarUrlFixed(member.avatar, member.name)}
-    alt={member.name}
-    className="w-full h-full object-cover rounded-full"
-    onError={(e) => {
-      e.target.style.display = "none";
-      e.target.parentNode.innerHTML = `
+                            {member.avatar ? (
+                              <img
+                                src={getAvatarUrlFixed(member.avatar, member.name)}
+                                alt={member.name}
+                                className="w-full h-full object-cover rounded-full"
+                                onError={(e) => {
+                                  e.target.style.display = "none";
+                                  e.target.parentNode.innerHTML = `
         <div style="
           display:flex;
           align-items:center;
@@ -1111,20 +1171,19 @@ onClick={() => {
           ${getInitials(member.name)}
         </div>
       `;
-    }}
-  />
-) : (
-  <div className="w-full h-full flex items-center justify-center text-white font-bold text-sm">
-    {getInitials(member.name)}
-  </div>
-)}
+                                }}
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-white font-bold text-sm">
+                                {getInitials(member.name)}
+                              </div>
+                            )}
                           </div>
                           <span
-                            className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-[#13131a] ${
-                              onlineUsers.includes(member._id)
-                                ? "bg-green-500 animate-pulse"
-                                : "bg-gray-500"
-                            }`}
+                            className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-[#13131a] ${onlineUsers.includes(member._id)
+                              ? "bg-green-500 animate-pulse"
+                              : "bg-gray-500"
+                              }`}
                           />
                         </div>
                         <div>
@@ -1134,9 +1193,9 @@ onClick={() => {
                         </div>
                       </div>
                       <div className="flex gap-2">
-                        <Button 
-                          variant="glass" 
-                          size="sm" 
+                        <Button
+                          variant="glass"
+                          size="sm"
                           fullWidth
                           onClick={() => openChat(member)}
                         >
@@ -1260,8 +1319,8 @@ onClick={() => {
                         <Button type="submit" loading={loading}>
                           Save Changes
                         </Button>
-                        <Button 
-                          type="button" 
+                        <Button
+                          type="button"
                           variant="glass"
                           onClick={() => setIsEditing(false)}
                         >
@@ -1345,8 +1404,8 @@ onClick={() => {
                 <div className="p-8 rounded-3xl bg-white/5 border border-white/10">
                   <h3 className="text-xl font-bold mb-6">Security</h3>
                   <div className="space-y-4">
-                    <Button 
-                      variant="glass" 
+                    <Button
+                      variant="glass"
                       fullWidth
                       onClick={() => navigate('/profile/change-password')}
                     >
@@ -1464,11 +1523,11 @@ onClick={() => {
                 </div>
 
                 <div className="flex items-center gap-4 mb-6">
-                 <img
-  src={getAvatarUrlFixed(selectedMember.avatar, selectedMember.name)}
-  className="w-16 h-16 rounded-full object-cover"
-  alt={selectedMember.name}
-/>
+                  <img
+                    src={getAvatarUrlFixed(selectedMember.avatar, selectedMember.name)}
+                    className="w-16 h-16 rounded-full object-cover"
+                    alt={selectedMember.name}
+                  />
                   <div>
                     <h3 className="text-lg font-bold">{selectedMember.name}</h3>
                     <p className="text-sm text-gray-400">{selectedMember.role}</p>
@@ -1517,42 +1576,42 @@ onClick={() => {
             </div>
           )}
 
-         
-                {/* Chat Modal */}
-      {showChatModal && chatUser && (
-        <ChatModal
-          user={chatUser}
-          onClose={() => setShowChatModal(false)}
-        />
-      )}
 
-      {/* 🔥 INVITE MODAL ADD HERE */}
-     {/* ========== MODERN INVITE MODAL ========== */}
+          {/* Chat Modal */}
+          {showChatModal && chatUser && (
+            <ChatModal
+              user={chatUser}
+              onClose={() => setShowChatModal(false)}
+            />
+          )}
+
+          {/* 🔥 INVITE MODAL ADD HERE */}
+          {/* ========== MODERN INVITE MODAL ========== */}
 
 
-<InviteFreelancersModal
-      inviteModalOpen={inviteModalOpen}
-      setInviteModalOpen={setInviteModalOpen}
-      freelancers={freelancers}
-      invitedIds={invitedIds}
-      handleSendInvite={handleSendInvite}
-    loading={freelancersLoading}
-refreshFreelancers={() => {}}
-    />
+          <InviteFreelancersModal
+            inviteModalOpen={inviteModalOpen}
+            setInviteModalOpen={setInviteModalOpen}
+            freelancers={freelancers}
+            invitedIds={invitedIds}
+            handleSendInvite={handleSendInvite}
+            loading={freelancersLoading}
+            refreshFreelancers={() => { }}
+          />
 
-          
+
         </div>
       </div>
-      
+
     </div>
-    
-     
-    
+
+
+
 
 
   );
 
-  
+
 }
 
 
