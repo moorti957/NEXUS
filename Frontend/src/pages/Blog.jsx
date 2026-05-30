@@ -4,6 +4,17 @@ import Reveal from '../components/common/Reveal';
 import Button from '../components/common/Button';
 import { useToast } from '../components/common/Toast';
 import { useAuth } from '../context/AuthContext';
+import {
+  FiGrid,
+  FiMonitor,
+  FiPenTool,
+  FiCode,
+  FiBarChart2,
+  FiBookOpen,
+   FiHeart,
+    FiMessageCircle
+} from "react-icons/fi";
+
 
 export default function Blog() {
   const BASE_URL = `${import.meta.env.VITE_API_URL}/api`;
@@ -25,14 +36,14 @@ export default function Blog() {
   });
 
   // Categories
-  const categories = [
-    { id: 'all', name: 'All Posts', icon: '📰', count: 0 },
-    { id: 'technology', name: 'Technology', icon: '💻', count: 0 },
-    { id: 'design', name: 'Design', icon: '🎨', count: 0 },
-    { id: 'development', name: 'Development', icon: '⚙️', count: 0 },
-    { id: 'business', name: 'Business', icon: '📊', count: 0 },
-    { id: 'tutorials', name: 'Tutorials', icon: '📚', count: 0 },
-  ];
+ const categories = [
+  { id: 'all', name: 'All Posts', icon: <FiGrid />, count: 0 },
+  { id: 'technology', name: 'Technology', icon: <FiMonitor />, count: 0 },
+  { id: 'design', name: 'Design', icon: <FiPenTool />, count: 0 },
+  { id: 'development', name: 'Development', icon: <FiCode />, count: 0 },
+  { id: 'business', name: 'Business', icon: <FiBarChart2 />, count: 0 },
+  { id: 'tutorials', name: 'Tutorials', icon: <FiBookOpen />, count: 0 },
+];
 
   // Sample blog posts data
   // const samplePosts = [
@@ -418,24 +429,27 @@ const handleLike = async (postId) => {
 
                         {/* Stats */}
                         <div className="flex items-center gap-3 text-sm text-gray-500">
-       <button
-  disabled={!user}
-  onClick={(e) => {
-    e.preventDefault();
-    handleLike(post._id);
-  }}
-  className={`flex items-center gap-1 transition-colors ${
-    !user
-      ? "opacity-50 cursor-not-allowed"
-      : "hover:text-red-400"
-  }`}
->
-  ❤️ {post.likes?.length || 0}
-</button>
-                          <span className="flex items-center gap-1">
-                            💬 {post.comments?.length || 0}
-                          </span>
-                        </div>
+  <button
+    disabled={!user}
+    onClick={(e) => {
+      e.preventDefault();
+      handleLike(post._id);
+    }}
+    className={`flex items-center gap-1 transition-colors ${
+      !user
+        ? "opacity-50 cursor-not-allowed"
+        : "hover:text-red-400"
+    }`}
+  >
+    <FiHeart className="w-4 h-4" />
+    {post.likes?.length || 0}
+  </button>
+
+  <span className="flex items-center gap-1">
+    <FiMessageCircle className="w-4 h-4" />
+    {post.comments?.length || 0}
+  </span>
+</div>
                       </div>
                     </div>
                   </Link>
@@ -504,20 +518,23 @@ const handleLike = async (postId) => {
                             <span className="text-sm font-medium">{post.author?.name || "Unknown"}</span>
                           </div>
 
-                          <div className="flex items-center gap-3 text-xs text-gray-500">
-                            <button 
-                              onClick={(e) => {
-                                e.preventDefault();
-                                handleLike(post._id);
-                              }}
-                              className="flex items-center gap-1 hover:text-red-400 transition-colors"
-                            >
-                              ❤️ {post.likes?.length || 0}
-                            </button>
-                            <span className="flex items-center gap-1">
-                              💬 {post.comments?.length || 0}
-                            </span>
-                          </div>
+                         <div className="flex items-center gap-3 text-xs text-gray-500">
+  <button
+    onClick={(e) => {
+      e.preventDefault();
+      handleLike(post._id);
+    }}
+    className="flex items-center gap-1 hover:text-red-400 transition-colors"
+  >
+    <FiHeart className="w-4 h-4" />
+    {post.likes?.length || 0}
+  </button>
+
+  <span className="flex items-center gap-1">
+    <FiMessageCircle className="w-4 h-4" />
+    {post.comments?.length || 0}
+  </span>
+</div>
                         </div>
                       </div>
                     </Link>

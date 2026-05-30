@@ -6,6 +6,21 @@ import { useToast } from '../components/common/Toast';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 
+
+import {
+  FiCode,
+  FiPenTool,
+  FiBarChart2,
+  FiAward,
+  FiBriefcase,
+  FiGrid,
+  FiTarget,
+  FiFileText,
+  FiSettings,
+  FiSend
+} from "react-icons/fi";
+
+
 // ─────────────────────────────────────────────────────────────
 // ICON MAP  – maps iconType string (stored in DB) → JSX icon
 // ─────────────────────────────────────────────────────────────
@@ -129,6 +144,7 @@ export default function Services() {
     message: '',
     newsletter: false,
   });
+  
   const [errors, setErrors] = useState({});
   const [contactLoading, setContactLoading] = useState(false);
 
@@ -162,17 +178,17 @@ export default function Services() {
   // ─────────────────────────────────────────────
   // Category tabs (built dynamically from fetched data)
   // ─────────────────────────────────────────────
-  const CATEGORY_META = {
-    development: { label: 'Development', icon: '💻' },
-    design:      { label: 'Design',       icon: '🎨' },
-    marketing:   { label: 'Marketing',    icon: '📈' },
-    branding:    { label: 'Branding',     icon: '✨' },
-    consulting:  { label: 'Consulting',   icon: '💡' },
-  };
+ const CATEGORY_META = {
+  development: { label: 'Development', icon: <FiCode /> },
+  design: { label: 'Design', icon: <FiPenTool /> },
+  marketing: { label: 'Marketing', icon: <FiBarChart2 /> },
+  branding: { label: 'Branding', icon: <FiAward /> },
+  consulting: { label: 'Consulting', icon: <FiBriefcase /> },
+};
 
   // Only show category tabs that actually have services
   const activeCategories = [
-    { id: 'all', label: 'All Services', icon: '🔍' },
+    { id: 'all', label: 'All Services', icon: <FiGrid /> },
     ...Object.entries(CATEGORY_META)
       .filter(([id]) => services.some((s) => s.category === id))
       .map(([id, meta]) => ({ id, ...meta })),
@@ -727,11 +743,31 @@ export default function Services() {
 
           <div className="grid md:grid-cols-4 gap-8">
             {[
-              { step: '01', title: 'Discovery', description: 'We learn about your business, goals, and target audience.', icon: '🔍' },
-              { step: '02', title: 'Strategy', description: 'We develop a comprehensive plan tailored to your needs.', icon: '📋' },
-              { step: '03', title: 'Execution', description: 'Our team brings the vision to life with precision.', icon: '⚡' },
-              { step: '04', title: 'Launch & Support', description: 'We deploy and provide ongoing maintenance and support.', icon: '🚀' },
-            ].map((item, index) => (
+  {
+    step: '01',
+    title: 'Discovery',
+    description: 'We learn about your business, goals, and target audience.',
+    icon: <FiTarget />
+  },
+  {
+    step: '02',
+    title: 'Strategy',
+    description: 'We develop a comprehensive plan tailored to your needs.',
+    icon: <FiFileText />
+  },
+  {
+    step: '03',
+    title: 'Execution',
+    description: 'Our team brings the vision to life with precision.',
+    icon: <FiSettings />
+  },
+  {
+    step: '04',
+    title: 'Launch & Support',
+    description: 'We deploy and provide ongoing maintenance and support.',
+    icon: <FiSend />
+  },
+].map((item, index) => (
               <Reveal key={item.step} delay={index * 200} type="up">
                 <div className="text-center group">
                   <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-indigo-500/10 to-purple-600/10 border border-white/10 flex items-center justify-center group-hover:scale-110 group-hover:from-indigo-500/20 group-hover:to-purple-600/20 transition-all duration-300">

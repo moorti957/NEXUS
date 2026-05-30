@@ -1,4 +1,10 @@
 import { Link } from 'react-router-dom';
+import {
+  FaXTwitter,
+  FaInstagram,
+  FaLinkedin,
+  FaGithub
+} from "react-icons/fa6";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
@@ -23,31 +29,31 @@ export default function Footer() {
   { name: 'Cookie Policy', path: '/cookie' },
 ],
     social: [
-      { 
-        name: 'Twitter', 
-        icon: '𝕏', 
-        url: 'https://twitter.com',
-        hoverColor: 'hover:bg-indigo-500'
-      },
-      { 
-        name: 'Instagram', 
-        icon: '📷', 
-        url: 'https://instagram.com',
-        hoverColor: 'hover:bg-purple-500'
-      },
-      { 
-        name: 'LinkedIn', 
-        icon: '🔗', 
-        url: 'https://linkedin.com',
-        hoverColor: 'hover:bg-pink-500'
-      },
-      { 
-        name: 'GitHub', 
-        icon: '💻', 
-        url: 'https://github.com',
-        hoverColor: 'hover:bg-indigo-500'
-      },
-    ],
+  {
+    name: 'Twitter',
+    icon: <FaXTwitter />,
+    url: 'https://twitter.com',
+    hoverColor: 'hover:bg-indigo-500'
+  },
+  {
+    name: 'Instagram',
+    icon: <FaInstagram />,
+    url: 'https://instagram.com',
+    hoverColor: 'hover:bg-purple-500'
+  },
+  {
+    name: 'LinkedIn',
+    icon: <FaLinkedin />,
+    url: 'https://linkedin.com',
+    hoverColor: 'hover:bg-pink-500'
+  },
+  {
+    name: 'GitHub',
+    icon: <FaGithub />,
+    url: 'https://github.com',
+    hoverColor: 'hover:bg-indigo-500'
+  },
+],
   };
 
   return (

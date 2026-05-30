@@ -83,29 +83,7 @@ export default function Layout({ children, openChat }) {
       <Footer />
 
       {/* Scroll to Top Button */}
-      <button
-        onClick={scrollToTop}
-        className={`fixed bottom-8 right-8 z-50 p-4 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-500/30 transition-all duration-500 hover:scale-110 hover:shadow-xl ${
-          showScrollTop 
-            ? 'opacity-100 translate-y-0' 
-            : 'opacity-0 translate-y-16 pointer-events-none'
-        }`}
-        aria-label="Scroll to top"
-      >
-        <svg
-          className="w-6 h-6"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M5 10l7-7m0 0l7 7m-7-7v18"
-          />
-        </svg>
-      </button>
+      
 
       {/* Loading Spinner (optional) */}
       {loading && (

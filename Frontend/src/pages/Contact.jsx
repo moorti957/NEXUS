@@ -4,6 +4,7 @@ import Button       from '../components/common/Button';
 import { useToast } from '../components/common/Toast';
 import { useAuth }  from '../context/AuthContext';
 import api          from '../services/api'; // ← use your real axios instance
+import { FaXTwitter, FaLinkedin, FaInstagram, FaGithub } from "react-icons/fa6";
 
 export default function Contact() {
   const { user }     = useAuth();
@@ -260,11 +261,22 @@ export default function Contact() {
 
               <div className="p-6 rounded-2xl bg-white/5 border border-white/10">
                 <h3 className="text-lg font-bold mb-4">Follow Us</h3>
-                <div className="flex gap-4">
-                  {[{ name: 'Twitter', icon: '𝕏', color: 'hover:bg-indigo-500' },{ name: 'LinkedIn', icon: '🔗', color: 'hover:bg-purple-500' },{ name: 'Instagram', icon: '📷', color: 'hover:bg-pink-500' },{ name: 'GitHub', icon: '💻', color: 'hover:bg-orange-500' }].map((social) => (
-                    <a key={social.name} href="#" className={`w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-xl transition-all duration-300 ${social.color} hover:text-white hover:scale-110`}>{social.icon}</a>
-                  ))}
-                </div>
+               <div className="flex gap-4">
+  {[
+    { name: 'Twitter', icon: <FaXTwitter />, color: 'hover:bg-indigo-500' },
+    { name: 'LinkedIn', icon: <FaLinkedin />, color: 'hover:bg-purple-500' },
+    { name: 'Instagram', icon: <FaInstagram />, color: 'hover:bg-pink-500' },
+    { name: 'GitHub', icon: <FaGithub />, color: 'hover:bg-orange-500' }
+  ].map((social) => (
+    <a
+      key={social.name}
+      href="#"
+      className={`w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-xl transition-all duration-300 ${social.color} hover:text-white hover:scale-110`}
+    >
+      {social.icon}
+    </a>
+  ))}
+</div>
               </div>
             </div>
           </Reveal>
