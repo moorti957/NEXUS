@@ -3,6 +3,13 @@ import { Link } from 'react-router-dom';
 import Reveal from '../components/common/Reveal';
 import Button from '../components/common/Button';
 import profileimg from '../assets/12345.jpg'
+import {
+  FaXTwitter,
+  FaLinkedin,
+  FaGithub,
+  FaDribbble,
+  FaMedium
+} from "react-icons/fa6";
 
 export default function About() {
   // Team members data
@@ -368,27 +375,27 @@ export default function About() {
                     
                     {/* Social Links */}
                     <div className="flex justify-center gap-3">
-                      {Object.entries(member.social).map(([platform, url]) => (
-                        <a
-                          key={platform}
-                          href={url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className={`
-                            w-8 h-8 rounded-full bg-white/10
-                            flex items-center justify-center text-sm
-                            hover:bg-gradient-to-r ${member.gradient} hover:text-white
-                            transition-all
-                          `}
-                        >
-                          {platform === 'twitter' && '𝕏'}
-                          {platform === 'linkedin' && '🔗'}
-                          {platform === 'github' && '💻'}
-                          {platform === 'dribbble' && '🎨'}
-                          {platform === 'medium' && '✍️'}
-                        </a>
-                      ))}
-                    </div>
+  {Object.entries(member.social).map(([platform, url]) => (
+    <a
+      key={platform}
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={`
+        w-8 h-8 rounded-full bg-white/10
+        flex items-center justify-center text-sm
+        hover:bg-gradient-to-r ${member.gradient} hover:text-white
+        transition-all
+      `}
+    >
+      {platform === 'twitter' && <FaXTwitter />}
+      {platform === 'linkedin' && <FaLinkedin />}
+      {platform === 'github' && <FaGithub />}
+      {platform === 'dribbble' && <FaDribbble />}
+      {platform === 'medium' && <FaMedium />}
+    </a>
+  ))}
+</div>
                   </div>
                 </div>
               </Reveal>
