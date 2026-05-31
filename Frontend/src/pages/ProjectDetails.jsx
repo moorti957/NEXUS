@@ -17,16 +17,22 @@ export default function ProjectDetails() {
   }, [id]);
 
   const fetchProject = async () => {
-    try {
-      const res = await api.get(`/projects/${id}`);
-      if (res.data.success) {
-        setProject(res.data.data.project);
-      }
-    } catch (error) {
-      console.error(error);
+  try {
+    console.log("Project ID:", id);
+
+    const res = await api.get(`/projects/${id}`);
+
+    console.log("API Response:", res.data);
+
+    if (res.data.success) {
+      setProject(res.data.data.project);
     }
-    setLoading(false);
-  };
+  } catch (error) {
+    console.error("Project Error:", error.response?.data || error);
+  }
+
+  setLoading(false);
+};
 
   if (loading) {
     return (

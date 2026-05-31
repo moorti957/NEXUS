@@ -173,7 +173,7 @@ const handleContactSubmit = (e) => {
     image: projectImg,
     gradient: 'from-indigo-500/10 to-purple-600/10',
     hoverGradient: 'from-indigo-500/20 to-purple-600/20',
-    link: '/projects/ecommerce-platform',   // changed
+    link: '/portfolio/ecommerce-platform',   // changed
   },
   {
     id: 2,
@@ -182,7 +182,7 @@ const handleContactSubmit = (e) => {
     image: banner1,
     gradient: 'from-purple-500/10 to-pink-600/10',
     hoverGradient: 'from-purple-500/20 to-pink-600/20',
-    link: '/projects/fitness-tracker',      // changed
+    link: '/portfolio/fitness-tracker',      // changed
   },
   {
     id: 3,
@@ -191,7 +191,7 @@ const handleContactSubmit = (e) => {
     image: bnner3,
     gradient: 'from-pink-500/10 to-orange-600/10',
     hoverGradient: 'from-pink-500/20 to-orange-600/20',
-    link: '/projects/startup-branding',     // changed
+    link: '/portfolio/startup-branding',     // changed
   },
 ];
 

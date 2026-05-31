@@ -77,7 +77,7 @@ function AnimatedRoutes() {
 
 
         {/* Project Detail Page */}
-        <Route path="/projects/:slug" element={<ProjectDetail />} />
+        <Route path="/portfolio/:slug" element={<ProjectDetail />} />
 
         {/* Existing dynamic project route */}
         <Route path="/projects/:id" element={<ProjectDetails />} />
