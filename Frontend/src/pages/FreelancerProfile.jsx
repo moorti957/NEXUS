@@ -28,7 +28,7 @@ import {
 const getAvatarUrl = (avatar, name) => {
   if (avatar) {
     if (avatar.startsWith('http')) return avatar;
-    const base = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+    const base = import.meta.env.VITE_API_URL || 'https://nexus-v40l.onrender.com';
     return `${base}${avatar}`;
   }
   return `https://ui-avatars.com/api/?name=${encodeURIComponent(name || 'User')}&background=6366f1&color=fff&size=200`;

@@ -863,7 +863,7 @@ export default function Auth() {
                 {!showResetPassword && (
                   <div className="mt-6 grid grid-cols-3 gap-3">
                     <button
-                      onClick={() => window.location.href = "http://localhost:5000/api/auth/google"}
+                      onClick={() => window.location.href = "https://nexus-v40l.onrender.com/api/auth/google"}
                       className="flex justify-center items-center px-4 py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-red-500/10 hover:border-red-500/30 transition-all"
                     >
                       <FaGoogle className="text-xl text-red-400" />

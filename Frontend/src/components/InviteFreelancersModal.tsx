@@ -244,9 +244,9 @@ export const InviteFreelancersModal: React.FC<InviteModalProps> = ({
       
       const token = localStorage.getItem("token");
       const [pendingRes, acceptedRes, rejectedRes] = await Promise.allSettled([
-        fetch('http://localhost:5000/api/team/invitations/pending', { headers: { Authorization: `Bearer ${token}` } }),
-        fetch('http://localhost:5000/api/team/invitations/accepted', { headers: { Authorization: `Bearer ${token}` } }),
-        fetch('http://localhost:5000/api/team/invitations/rejected', { headers: { Authorization: `Bearer ${token}` } })
+        fetch('https://nexus-v40l.onrender.com/api/team/invitations/pending', { headers: { Authorization: `Bearer ${token}` } }),
+        fetch('https://nexus-v40l.onrender.com/api/team/invitations/accepted', { headers: { Authorization: `Bearer ${token}` } }),
+        fetch('https://nexus-v40l.onrender.com/api/team/invitations/rejected', { headers: { Authorization: `Bearer ${token}` } })
       ]);
 
       const pendingData = pendingRes.status === 'fulfilled' && pendingRes.value.ok ? await pendingRes.value.json() : { data: [] };
@@ -272,7 +272,7 @@ export const InviteFreelancersModal: React.FC<InviteModalProps> = ({
   // Refresh notifications bell (pending only)
   const fetchNotifications = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/team/invitations/pending', {
+      const res = await fetch('https://nexus-v40l.onrender.com/api/team/invitations/pending', {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
       });
       const data = await res.json();
@@ -287,7 +287,7 @@ export const InviteFreelancersModal: React.FC<InviteModalProps> = ({
   const handleAcceptInvite = async (inviteId: string) => {
     try {
       const res = await fetch(
-  `http://localhost:5000/api/team/invitations/${inviteId}/accept`,
+  `https://nexus-v40l.onrender.com/api/team/invitations/${inviteId}/accept`,
   {
     method: "POST",
     headers: {
@@ -308,7 +308,7 @@ export const InviteFreelancersModal: React.FC<InviteModalProps> = ({
 
   const handleRejectInvite = async (inviteId: string) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/team/invitations/${inviteId}/reject`, {
+      const res = await fetch(`https://nexus-v40l.onrender.com/api/team/invitations/${inviteId}/reject`, {
         method: "POST",
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
       });
@@ -330,7 +330,7 @@ export const InviteFreelancersModal: React.FC<InviteModalProps> = ({
 
   // ========== Socket (unchanged) ==========
   useEffect(() => {
-    socketRef.current = io("http://localhost:5000", {
+    socketRef.current = io("https://nexus-v40l.onrender.com", {
       auth: { token: localStorage.getItem("token") },
       transports: ["websocket"]
     });

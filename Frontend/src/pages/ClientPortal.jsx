@@ -20,7 +20,7 @@ import ProjectProgressTracker from '../components/projects/ProjectProgressTracke
 const getAvatarUrl = (avatar, name) => {
   if (!avatar) return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=6366f1&color=fff`;
   if (avatar.startsWith('http')) return avatar;
-  return `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${avatar}`;
+  return `${import.meta.env.VITE_API_URL || 'https://nexus-v40l.onrender.com'}${avatar}`;
 };
 
 // Format currency
