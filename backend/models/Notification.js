@@ -25,6 +25,43 @@ const notificationSchema = new mongoose.Schema({
     default: ''
   },
 
+
+
+
+
+   receiver: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
+    sender: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
+    type: {
+      type: String,
+      enum: ['comment', 'accept_freelancer', 'accepted_by_client'],
+      required: true,
+    },
+    postId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Post',
+      default: null,
+    },
+    commentId: {
+      type: mongoose.Schema.Types.ObjectId,
+      default: null,
+    },
+    message: {
+      type: String,
+      required: true,
+    },
+    read: {
+      type: Boolean,
+      default: false,
+    },
+
   // ===========================================
   // NOTIFICATION TYPE & CATEGORY
   // ===========================================
@@ -405,7 +442,8 @@ const notificationSchema = new mongoose.Schema({
   deletedAt: {
     type: Date
   }
-}, {
+},
+ {
   timestamps: true,
   toJSON: { virtuals: true },
   toObject: { virtuals: true }

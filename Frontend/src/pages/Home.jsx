@@ -37,7 +37,7 @@ export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [activeFilter, setActiveFilter] = useState('All Work');
   const [selectedService, setSelectedService] = useState(null);
-const [showContactModal, setShowContactModal] = useState(false);
+  const [showContactModal, setShowContactModal] = useState(false);
   const [stats, setStats] = useState({
     projects: 150,
     clients: 50,
@@ -80,16 +80,18 @@ const handleContactSubmit = (e) => {
 
   useEffect(() => {
   const fetchServices = async () => {
-    try {
-      const res = await api.get('/services?status=active&limit=3');
+  try {
+    const res = await api.get('/services/public?limit=3');
 
-      if (res.data.success) {
-        setServices(res.data.data.services || []);
-      }
-    } catch (error) {
-      console.error("Failed to load services", error);
+    console.log("PUBLIC SERVICES:", res.data);
+
+    if (res.data.success) {
+      setServices(res.data.data.services || []);
     }
-  };
+  } catch (error) {
+    console.error("Services Error:", error);
+  }
+};
 
   fetchServices();
 }, []);
@@ -191,7 +193,7 @@ const handleContactSubmit = (e) => {
     image: bnner3,
     gradient: 'from-pink-500/10 to-orange-600/10',
     hoverGradient: 'from-pink-500/20 to-orange-600/20',
-    link: '/portfolio/startup-branding',     // changed
+    link: '/portfolio/pdf-fasa',     // changed
   },
 ];
 
@@ -794,7 +796,7 @@ const handleContactSubmit = (e) => {
     {/* ── Footer CTA ── */}
     <div className="text-center mt-16">
       <Reveal delay={200}>
-        <Link to="/services">
+        <Link to="/portfolioGallery">
           <Button
             size="lg"
             variant="glass"

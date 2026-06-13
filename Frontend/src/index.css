@@ -788,3 +788,14 @@ input[type="checkbox"]:checked::after {
 .animate-fadeInUp { animation: fadeInUp 0.2s ease-out; }
 .animate-scaleIn { animation: scaleIn 0.2s ease-out; }
 .animate-slideUp { animation: slideUp 0.2s ease-out; }
+
+
+select {
+  background-color: #0f172a;
+  color: white;
+}
+
+select option {
+  background-color: #0f172a;
+  color: white;
+}

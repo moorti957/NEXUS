@@ -2,6 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
+import NotificationBell from '../notifications/NotificationBell';
 
 export default function Header({ openChat }) {
   const { user, logout } = useAuth();
@@ -215,6 +216,8 @@ export default function Header({ openChat }) {
               </svg>
             )}
           </button>
+
+           {user && <NotificationBell />}
 
           {/* User Avatar / Sign In Button */}
           {user ? (

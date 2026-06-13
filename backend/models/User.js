@@ -50,27 +50,27 @@ const userSchema = new mongoose.Schema({
       }
     ]
   },
+  googleId: {
+  type: String,
+  default: null
+},
+
+provider: {
+  type: String,
+  default: "local"
+},
+
 
   
 
-  password: {
-    type: String,
-    required: [true, 'Password is required'],
-    minlength: [8, 'Password must be at least 8 characters long'],
-    select: false, // Don't return password by default in queries
-    validate: {
-      validator: function(value) {
-        // Password strength validation
-        const hasUpperCase = /[A-Z]/.test(value);
-        const hasLowerCase = /[a-z]/.test(value);
-        const hasNumbers = /\d/.test(value);
-        const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(value);
-        
-        return hasUpperCase && hasLowerCase && hasNumbers && hasSpecialChar;
-      },
-      message: 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'
-    }
+password: {
+  type: String,
+  required: function () {
+    return this.provider !== "google";
   },
+  minlength: [8, 'Password must be at least 8 characters long'],
+  select: false,
+},
 
 
    assignedProjects: [
@@ -95,6 +95,15 @@ teamId: {
     type: Date,
     select: false
   },
+  resetOtp: {
+  type: String,
+  select: false
+},
+
+resetOtpExpire: {
+  type: Date,
+  select: false
+},
 
   // Email verification
   isEmailVerified: {
@@ -409,7 +418,13 @@ userSchema.virtual('profileCompletion').get(function() {
 // Hash password before saving
 userSchema.pre('save', async function(next) {
   try {
-    // Only hash if password is modified
+
+    // Google login user ke paas password nahi hoga
+    if (!this.password) {
+      return next();
+    }
+
+    // Password change nahi hua to skip
     if (!this.isModified('password')) {
       return next();
     }
@@ -419,9 +434,10 @@ userSchema.pre('save', async function(next) {
     this.password = await bcrypt.hash(this.password, salt);
 
     // Update password changed timestamp
-    this.passwordChangedAt = Date.now() - 1000; // Subtract 1 second to ensure token is created after password change
+    this.passwordChangedAt = Date.now() - 1000;
 
     next();
+
   } catch (error) {
     next(error);
   }

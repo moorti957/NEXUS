@@ -8,6 +8,31 @@ const { validationResult } = require('express-validator');
 // MESSAGE CRUD OPERATIONS
 // ===========================================
 
+const Project = require('../models/Project');
+
+const getClientProjects = async (req, res) => {
+  try {
+    const projects = await Project.find({
+      createdBy: req.user._id
+    })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    res.status(200).json({
+      success: true,
+      data: projects
+    });
+
+  } catch (error) {
+    console.error("Get Client Projects Error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Server error while fetching projects"
+    });
+  }
+};
+
 /**
  * @desc    Get all conversations for current user
  * @route   GET /api/messages/conversations
@@ -1472,5 +1497,6 @@ module.exports = {
   archiveConversation,
   uploadAttachment,
   scheduleMessage,
+  getClientProjects,
   getScheduledMessages
 };

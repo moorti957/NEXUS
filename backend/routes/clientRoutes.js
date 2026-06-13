@@ -18,6 +18,7 @@ const {
   getContactHistory,
   addNote,
   getNotes,
+  getClientProjects,
   updateNote,
   deleteNote,
   addFeedback,
@@ -329,6 +330,13 @@ router.get('/search', [
 // ], exportClients);
 
 
+
+/**
+ * @route GET /api/client/projects
+ * @desc Get projects created by logged-in client
+ * @access Private
+ */
+router.get('/projects', getClientProjects);
 
 
 

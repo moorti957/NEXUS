@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { useState } from "react";
-
+import PostDetail from "./pages/PostDetail";
+import AcceptedCollaborations from "./components/profile/AcceptedCollaborations";
 import { AuthProvider } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import { NotificationProvider } from "./context/NotificationContext.jsx";
@@ -38,6 +39,10 @@ import Notifications from './pages/Notifications';
 import OnboardingWizard from './components/onboarding/OnboardingWizard';
 import ClientPortal from './pages/ClientPortal';
 import ProjectWorkspace from './pages/ProjectWorkspace.jsx'
+import GoogleSuccess from "./pages/GoogleSuccess";
+import ProfileRouter from "./pages/ProfileRouter";
+import PortfolioGallery from "./pages/PortfolioGallery.jsx";
+import FreelancerProfile from './pages/FreelancerProfile';
 
 
 // NEW: Import the three project detail pages
@@ -58,14 +63,35 @@ function AnimatedRoutes() {
         <Route path="/blog" element={<Blog />} />
         <Route path="/blog/:id" element={<BlogDetail />} />
         <Route path="/contact" element={<Contact />} />
-        <Route path="/profile" element={<Profile />} />
+        <Route path="/freelancer/:id" element={<FreelancerProfile />} />
+        <Route path="/posts/:id" element={<PostDetail />} />
+        <Route
+  path="/profile"
+  element={
+    <ProtectedRoute>
+      <ProfileRouter />
+    </ProtectedRoute>
+  }
+/>
+<Route path="/portfolioGallery" element={<PortfolioGallery />} />
         <Route path="/projects/new" element={<CreateProject />} />
         <Route path="/terms" element={<Terms />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/cookie" element={<Cookie />} />
         <Route path="/help" element={<HelpCenter />} />
-        <Route path="/notifications" element={<Notifications />} />
+        <Route
+  path="/notifications"
+  element={
+    <ProtectedRoute>
+      <Notifications />
+    </ProtectedRoute>
+  }
+/>
         <Route path="/onboarding" element={<OnboardingWizard />} />
+        <Route
+  path="/google-success"
+  element={<GoogleSuccess />}
+/>
         <Route
           path="/client-portal"
           element={

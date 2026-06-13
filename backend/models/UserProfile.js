@@ -16,6 +16,25 @@ const UserProfileSchema = new mongoose.Schema({
     unique: true,
     sparse: true
   },
+  companyName: {
+  type: String,
+  default: ''
+},
+
+industry: {
+  type: String,
+  default: ''
+},
+
+companyWebsite: {
+  type: String,
+  default: ''
+},
+
+aboutCompany: {
+  type: String,
+  default: ''
+},
 
   mobileNumber: { type: String, default: '' },
   city: { type: String, default: '' },

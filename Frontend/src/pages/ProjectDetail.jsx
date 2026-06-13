@@ -8,16 +8,24 @@ import Reveal from '../components/common/Reveal';
 
 export default function ProjectDetail() {
   const { slug } = useParams();
+  console.log("URL SLUG =", slug);
+console.log("PROJECTS =", projects);
   
   // Map slugs to project keys
-  const slugToKey = {
-    'ecommerce-platform': 'ecommerce',
-    'fitness-tracker': 'fitness',
-    'startup-branding': 'startup',
-  };
+ const slugToKey = {
+  'ecommerce-platform': 'ecommerce',
+  'fitness-tracker': 'fitness',
+  'pdf-fasa': 'startup',
+  'ecommerce-jay': 'ecommerce',
+  'ecommerce-jay': 'jaykisan',
+  'bhardwaj-murti-art': 'bhardwajmurti',
+  'saraswati-murti-kala-kendra': 'saraswatimurti',
+};
 
   const projectKey = slugToKey[slug];
+  console.log("PROJECT KEY =", projectKey);
   const project = projects[projectKey];
+  console.log("PROJECT =", project);
 
   if (!project) {
     return <Navigate to="/" replace />;

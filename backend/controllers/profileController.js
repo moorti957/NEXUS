@@ -6,6 +6,7 @@ const { validationResult } = require('express-validator');
 const bcrypt = require('bcryptjs');
 const fs = require('fs').promises;
 const path = require('path');
+const UserProfile = require('../models/UserProfile');
 
 // ===========================================
 // PROFILE MANAGEMENT
@@ -20,104 +21,119 @@ const path = require('path');
 
 const getProfile = async (req, res) => {
   try {
-
     console.log("🔥 USER:", req.user);
 
     if (!req.user || !req.user._id) {
       return res.status(401).json({
         success: false,
-        message: "User not authenticated"
+        message: "User not authenticated",
       });
     }
 
+    // USER COLLECTION
     const user = await User.findById(req.user._id)
-  .select('-password -resetPasswordToken -resetPasswordExpire -loginAttempts -lockUntil')
-  .populate('assignedProjects', 'name status deadline progress');
+      .select(
+        "-password -resetPasswordToken -resetPasswordExpire -loginAttempts -lockUntil"
+      )
+      .populate("assignedProjects", "name status deadline progress");
 
-if (!user) {
-  return res.status(404).json({
-    success: false,
-    message: "User not found"
-  });
-}
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
 
-// ✅ SAFE VARIABLES
-let projectsCompleted = 0;
-let activeProjects = 0;
-let totalClients = 0;
-let unreadNotifications = 0;
-let recentActivity = [];
+    // USERPROFILE COLLECTION
+    const userProfile = await UserProfile.findOne({
+      userId: req.user._id,
+    });
 
-try {
-  projectsCompleted = await Project.countDocuments({
-    'teamMembers.user': user._id,
-    status: 'Completed'
-  });
-} catch (e) {
-  console.log("projectsCompleted error:", e.message);
-}
+    // MERGE BOTH DATA
+    const profile = {
+      ...user.toObject(),
+      ...(userProfile ? userProfile.toObject() : {}),
+    };
 
-try {
-  activeProjects = await Project.countDocuments({
-    'teamMembers.user': user._id,
-    status: { $in: ['In Progress', 'Planning'] }
-  });
-} catch (e) {
-  console.log("activeProjects error:", e.message);
-}
+    // STATS
+    let projectsCompleted = 0;
+    let activeProjects = 0;
+    let totalClients = 0;
+    let unreadNotifications = 0;
+    let recentActivity = [];
 
-try {
-  totalClients = await Client.countDocuments({
-    projects: { 
-  $in: Array.isArray(user.assignedProjects) 
-    ? user.assignedProjects 
-    : [] 
-}
-  });
-} catch (e) {
-  console.log("Client error:", e.message);
-}
+    try {
+      projectsCompleted = await Project.countDocuments({
+        "teamMembers.user": user._id,
+        status: "Completed",
+      });
+    } catch (e) {
+      console.log("projectsCompleted error:", e.message);
+    }
 
-try {
-  unreadNotifications = await Notification.countDocuments({
-    user: user._id,
-    isRead: false
-  });
-} catch (e) {
-  console.log("Notification error:", e.message);
-}
+    try {
+      activeProjects = await Project.countDocuments({
+        "teamMembers.user": user._id,
+        status: { $in: ["In Progress", "Planning"] },
+      });
+    } catch (e) {
+      console.log("activeProjects error:", e.message);
+    }
 
-try {
-  recentActivity = await Notification.find({
-    user: user._id
-  }).limit(10);
-} catch (e) {
-  console.log("Activity error:", e.message);
-}
+    try {
+      totalClients = await Client.countDocuments({
+        projects: {
+          $in: Array.isArray(user.assignedProjects)
+            ? user.assignedProjects
+            : [],
+        },
+      });
+    } catch (e) {
+      console.log("Client error:", e.message);
+    }
 
-// ✅ FINAL RESPONSE
-res.json({
-  success: true,
-  data: {
-    profile: user,
-    stats: {
-      projectsCompleted,
-      activeProjects,
-      totalClients,
-      unreadNotifications,
-      profileCompletion: user.profileCompletion,
-      memberSince: user.createdAt
-    },
-    recentActivity
+    try {
+      unreadNotifications = await Notification.countDocuments({
+        user: user._id,
+        isRead: false,
+      });
+    } catch (e) {
+      console.log("Notification error:", e.message);
+    }
+
+    try {
+      recentActivity = await Notification.find({
+        user: user._id,
+      })
+        .sort({ createdAt: -1 })
+        .limit(10);
+    } catch (e) {
+      console.log("Activity error:", e.message);
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        profile,
+        stats: {
+          projectsCompleted,
+          activeProjects,
+          totalClients,
+          unreadNotifications,
+          profileCompletion: user.profileCompletion || 0,
+          memberSince: user.createdAt,
+        },
+        recentActivity,
+      },
+    });
+  } catch (error) {
+    console.error("🔥 FINAL ERROR:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
-});
-} catch (error) {
-  console.error("🔥 FINAL ERROR:", error);
-  res.status(500).json({
-    success: false,
-    message: error.message
-  });
-}
 };
 /**
  * @desc    Update profile
@@ -126,8 +142,8 @@ res.json({
  */
 const updateProfile = async (req, res) => {
   try {
-    // Check validation errors
     const errors = validationResult(req);
+
     if (!errors.isEmpty()) {
       return res.status(400).json({
         success: false,
@@ -142,76 +158,124 @@ const updateProfile = async (req, res) => {
       name,
       email,
       phone,
-      company,
-      position,
-      location,
-      bio,
-      socialLinks,
-      notificationPreferences
+      username,
+      companyName,
+      companyWebsite,
+      industry,
+      city,
+      country,
+      shortBio,
+      aboutCompany
     } = req.body;
 
-    // Check if email is being changed and already exists
+    // Check email duplicate
     if (email && email !== req.user.email) {
       const existingUser = await User.findOne({ email });
+
       if (existingUser) {
         return res.status(400).json({
           success: false,
-          message: 'Email already in use'
+          message: "Email already in use"
         });
       }
     }
 
-    // Update user
+    // =========================
+    // UPDATE USER COLLECTION
+    // =========================
     const user = await User.findByIdAndUpdate(
       req.user._id,
       {
         name,
         email,
         phone,
-        company,
-        position,
-        location,
-        bio,
-        socialLinks,
-        notificationPreferences,
         updatedAt: Date.now()
       },
-      { new: true, runValidators: true }
-    ).select('-password -resetPasswordToken -resetPasswordExpire');
+      {
+        new: true,
+        runValidators: true
+      }
+    ).select(
+      "-password -resetPasswordToken -resetPasswordExpire"
+    );
 
-    // Create notification for profile update
-    await Notification.createNotification({
+    // =========================
+    // UPDATE USERPROFILE
+    // =========================
+    let profile = await UserProfile.findOne({
+      userId: req.user._id
+    });
+
+    if (!profile) {
+      profile = await UserProfile.create({
+        userId: req.user._id
+      });
+    }
+
+    profile.username = username || profile.username;
+    profile.companyName = companyName || "";
+    profile.companyWebsite = companyWebsite || "";
+    profile.industry = industry || "";
+    profile.city = city || "";
+    profile.country = country || "";
+    profile.shortBio = shortBio || "";
+    profile.aboutCompany = aboutCompany || "";
+
+    await profile.save();
+
+    // =========================
+    // NOTIFICATION
+    // =========================
+    await Notification.create({
       user: user._id,
-      type: 'success',
-      category: 'profile',
-      title: 'Profile Updated',
-      message: 'Your profile has been successfully updated',
-      priority: 'low'
+      sender: user._id,
+      receiver: user._id,
+
+      userName: user.name,
+      userEmail: user.email,
+      userAvatar: user.avatar,
+
+      type: "success",
+      category: "profile",
+      title: "Profile Updated",
+      message: "Your profile has been successfully updated",
+      priority: "low"
     });
 
-    res.json({
+    // =========================
+    // RESPONSE
+    // =========================
+    return res.json({
       success: true,
-      message: 'Profile updated successfully',
-      data: { user }
+      message: "Profile updated successfully",
+      data: {
+        user,
+        profile
+      }
     });
+
   } catch (error) {
-    console.error('Update Profile Error:', error);
-    
-    if (error.name === 'ValidationError') {
+    console.error("Update Profile Error:", error);
+
+    if (error.name === "ValidationError") {
       const errors = Object.values(error.errors).map(err => ({
         field: err.path,
         message: err.message
       }));
+
       return res.status(400).json({
         success: false,
         errors
       });
     }
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      message: 'Server error while updating profile',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: "Server error while updating profile",
+      error:
+        process.env.NODE_ENV === "development"
+          ? error.message
+          : undefined
     });
   }
 };

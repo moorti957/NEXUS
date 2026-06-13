@@ -75,6 +75,10 @@ const upload = multer({
   fileFilter: fileFilter
 });
 
+
+
+
+
 // ===========================================
 // VALIDATION RULES
 // ===========================================
@@ -270,6 +274,36 @@ router.get('/', getProfile);
  * @access  Private
  */
 router.put('/', updateProfileValidation, updateProfile);
+
+
+
+router.get('/full-profile', protect, getProfile);
+
+router.get('/projects', protect, async (req, res) => {
+  res.json({
+    success: true,
+    data: []
+  });
+});
+
+router.get('/earnings', protect, async (req, res) => {
+  res.json({
+    success: true,
+    data: {
+      totalEarnings: 0
+    }
+  });
+});
+
+router.get('/analytics', protect, async (req, res) => {
+  res.json({
+    success: true,
+    data: {
+      views: 0,
+      profileVisits: 0
+    }
+  });
+});
 
 /**
  * @route   POST /api/profile/avatar

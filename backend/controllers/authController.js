@@ -4,6 +4,8 @@ const crypto = require('crypto');
 const { validationResult } = require('express-validator');
 const Client = require('../models/Client');
 const UserProfile = require('../models/UserProfile');
+const nodemailer = require("nodemailer");
+const bcrypt = require("bcryptjs");
 
 // ===========================================
 // HELPER FUNCTIONS
@@ -18,6 +20,177 @@ const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRE || '7d',
   });
+};
+
+const sendResetOtp = async (req, res) => {
+  try {
+    console.log("EMAIL_USER =", process.env.EMAIL_USER);
+    console.log("EMAIL_PASS =", process.env.EMAIL_PASS);
+    console.log("🔥 SEND OTP HIT");
+    console.log("EMAIL =>", req.body.email);
+
+    const { email } = req.body;
+
+    const user = await User.findOne({
+  email: email
+})
+
+    console.log("USER =>", user);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found"
+      });
+    }
+
+    const otp = Math.floor(
+      100000 + Math.random() * 900000
+    ).toString();
+
+    user.resetOtp = otp;
+    user.resetOtpExpire = Date.now() + 10 * 60 * 1000;
+
+    await user.save({
+      validateBeforeSave: false
+    });
+
+    console.log("📩 OTP =>", otp);
+
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+      }
+    });
+
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: "Password Reset OTP",
+      html: `
+        <div style="font-family:Arial,sans-serif">
+          <h2>Password Reset Verification</h2>
+          <p>Your verification code is:</p>
+          <h1 style="letter-spacing:5px">${otp}</h1>
+          <p>This OTP is valid for 10 minutes.</p>
+        </div>
+      `
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "OTP sent successfully"
+    });
+
+  } catch (err) {
+
+    console.error("❌ OTP ERROR =>", err);
+
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+      stack: process.env.NODE_ENV === "development"
+        ? err.stack
+        : undefined
+    });
+  }
+};
+
+const verifyResetOtp = async (req,res)=>{
+ try {
+
+  const { email, otp } = req.body;
+
+  console.log("EMAIL =>", email);
+  console.log("OTP FROM FRONTEND =>", otp);
+
+  const user = await User.findOne({ email })
+   .select("+resetOtp +resetOtpExpire");
+
+  console.log("OTP IN DB =>", user?.resetOtp);
+  console.log("EXPIRE =>", user?.resetOtpExpire);
+
+  if(!user){
+    return res.status(404).json({
+      success:false,
+      message:"User not found"
+    });
+  }
+
+  if(String(user.resetOtp).trim() !== String(otp).trim()){
+    return res.status(400).json({
+      success:false,
+      message:"Invalid OTP"
+    });
+  }
+
+  if(user.resetOtpExpire < Date.now()){
+    return res.status(400).json({
+      success:false,
+      message:"OTP Expired"
+    });
+  }
+
+  return res.status(200).json({
+    success:true,
+    message:"OTP Verified Successfully"
+  });
+
+ } catch(error){
+   console.log(error);
+
+   return res.status(500).json({
+     success:false,
+     message:error.message
+   });
+ }
+};
+
+
+
+
+const updatePasswordWithOtp =
+async (req,res)=>{
+
+ const {
+   email,
+   otp,
+   password
+ } = req.body;
+
+ const user =
+ await User.findOne({ email })
+ .select(
+  "+password +resetOtp +resetOtpExpire"
+ );
+
+ if(!user){
+   return res.status(404).json({
+    success:false
+   });
+ }
+
+ if(user.resetOtp !== otp){
+   return res.status(400).json({
+    success:false,
+    message:"Invalid OTP"
+   });
+ }
+
+ user.password = password;
+
+ user.resetOtp = undefined;
+ user.resetOtpExpire = undefined;
+
+ await user.save();
+
+ res.json({
+  success:true,
+  message:"Password Updated"
+ });
+
 };
 
 /**
@@ -446,7 +619,9 @@ const forgotPassword = async (req, res) => {
     }
 
     // Find user
-    const user = await User.findOne({ email });
+    const user = await User.findOne({
+  email: email
+})
     
     // For security, always return success even if user doesn't exist
     if (!user) {
@@ -1022,4 +1197,7 @@ module.exports = {
   getUserById,
   updateUser,
   deleteUser,
+  sendResetOtp,
+verifyResetOtp,
+updatePasswordWithOtp
 };

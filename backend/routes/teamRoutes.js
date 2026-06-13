@@ -230,43 +230,63 @@ router.get('/freelancers', async (req, res) => {
     console.time("freelancers-query");
 
     // DB ping test
-    await mongoose.connection.db.admin().ping();
+    
     console.log("✅ Mongo ping success");
 
     // very simple query first
-    const freelancers = await UserProfile.find({
-      accountType: "Freelancer"
-    })
-      .select(
-        "userId firstName lastName mobileNumber city country profilePhoto skills"
-      )
-      .limit(5)
-      .lean();
+  const freelancers = await UserProfile.find({
+  accountType: "Freelancer"
+})
+.populate("userId", "name email avatar")
+.select(
+  "userId firstName lastName mobileNumber city country profilePhoto skills"
+)
+.lean();
 
     console.timeEnd("freelancers-query");
     console.log("✅ freelancers found:", freelancers.length);
+    console.log(
+  "Freelancers:",
+  freelancers.map(f => ({
+    id: f.userId?._id,
+    name: `${f.firstName} ${f.lastName}`,
+    accountType: f.accountType
+  }))
+);
 
     const currentUserId = req.user?.id || "";
 
     const formattedFreelancers = freelancers
-      .filter(f => String(f.userId) !== String(currentUserId))
-      .map((f) => ({
-        _id: f.userId,
+  .filter(
+    f =>
+      String(f.userId?._id || f.userId) !==
+      String(currentUserId)
+  )
+  .map((f) => ({
+    _id: f.userId?._id,
 
-        name:
-          `${f.firstName || ""} ${f.lastName || ""}`.trim() ||
-          "Unknown User",
+    userId: f.userId?._id,
 
-        phone: f.mobileNumber || "",
+    name:
+      `${f.firstName || ""} ${f.lastName || ""}`.trim() ||
+      f.userId?.name ||
+      "Unknown User",
 
-        location:
-          `${f.city || ""} ${f.country || ""}`.trim() ||
-          "Unknown",
+    email: f.userId?.email || "",
 
-        avatar: f.profilePhoto || "",
+    phone: f.mobileNumber || "",
 
-        skills: f.skills || []
-      }));
+    location:
+      `${f.city || ""} ${f.country || ""}`.trim() ||
+      "Unknown",
+
+    avatar:
+      f.profilePhoto ||
+      f.userId?.avatar ||
+      "",
+
+    skills: f.skills || []
+  }));
 
     return res.status(200).json({
       success: true,
@@ -289,26 +309,247 @@ router.get('/freelancers', async (req, res) => {
 
 router.get('/my-team', async (req, res) => {
   try {
+
+    // सभी accepted invites निकालो
     const acceptedInvites = await TeamInvite.find({
-      owner: req.user.id,
-      status: 'accepted'
-    }).populate('member', 'name email avatar role');
-    const members = acceptedInvites.map(inv => inv.member);
-    res.json({ success: true, data: members });
+      status: 'accepted',
+      $or: [
+        { owner: req.user.id },
+        { member: req.user.id }
+      ]
+    })
+      .populate('owner', 'name email avatar role')
+      .populate('member', 'name email avatar role');
+
+    // Reverse duplicate records हटाओ
+    const uniqueInvites = [];
+    const seen = new Set();
+
+    acceptedInvites.forEach(inv => {
+
+      const key = [
+        inv.owner._id.toString(),
+        inv.member._id.toString()
+      ]
+        .sort()
+        .join('-');
+
+      if (!seen.has(key)) {
+        seen.add(key);
+        uniqueInvites.push(inv);
+      }
+
+    });
+
+    const members = uniqueInvites.map(inv => {
+
+      const ownerId = inv.owner._id.toString();
+
+      // दूसरा user कौन है
+      const otherUser =
+        ownerId === req.user.id
+          ? inv.member
+          : inv.owner;
+
+      return {
+        ...otherUser.toObject(),
+
+        // केवल invite भेजने वाला Leader है
+        isLeader: ownerId === otherUser._id.toString(),
+
+        // केवल जिसने invite भेजी है वही project assign कर सकता है
+        canAssignProject: ownerId === req.user.id,
+
+        // Team leader id
+        leaderId: ownerId
+      };
+
+    });
+
+    // Duplicate members हटाओ
+    const uniqueMembers = [
+      ...new Map(
+        members.map(member => [
+          member._id.toString(),
+          member
+        ])
+      ).values()
+    ];
+
+    console.log("TEAM MEMBERS:", uniqueMembers);
+
+    res.json({
+      success: true,
+      data: uniqueMembers
+    });
+
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+
+    console.error("MY TEAM ERROR:", error);
+
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+
   }
 });
 
 router.get('/invitations/pending', async (req, res) => {
   try {
+     console.log("LOGIN USER ID:", req.user.id);
+    console.log("LOGIN USER _ID:", req.user._id);
+
     const pendingInvites = await TeamInvite.find({
       member: req.user.id,
       status: 'pending'
     }).populate('owner', 'name email avatar');
-    res.json({ success: true, data: pendingInvites });
+    console.log("FOUND INVITES:", pendingInvites);
+
+    const formattedInvites = await Promise.all(
+      pendingInvites.map(async (invite) => {
+
+        const profile = await UserProfile.findOne({
+          userId: invite.owner._id
+        });
+
+        return {
+          _id: invite._id,
+          status: invite.status,
+          createdAt: invite.createdAt,
+
+          invitedBy: {
+            _id: invite.owner._id,
+            name: invite.owner?.name || '',
+            email: invite.owner?.email || '',
+            avatar: invite.owner?.avatar || '',
+
+            phone: profile?.mobileNumber || '',
+
+            location:
+              `${profile?.city || ''}, ${profile?.country || ''}`
+                .replace(/^,\s*|,\s*$/g, ''),
+
+            skills: profile?.skills || []
+          }
+        };
+      })
+    );
+
+    res.json({
+      success: true,
+      data: formattedInvites
+    });
+
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+router.get('/invitations/accepted', async (req, res) => {
+  try {
+    const acceptedInvites = await TeamInvite.find({
+      member: req.user.id,
+      status: 'accepted'
+    }).populate('owner', 'name email avatar');
+
+    const formattedInvites = await Promise.all(
+      acceptedInvites.map(async (invite) => {
+
+        const profile = await UserProfile.findOne({
+          userId: invite.owner._id
+        });
+
+        return {
+          _id: invite._id,
+          status: invite.status,
+          createdAt: invite.createdAt,
+
+          invitedBy: {
+            _id: invite.owner._id,
+            name: invite.owner?.name || '',
+            email: invite.owner?.email || '',
+            avatar: invite.owner?.avatar || '',
+
+            phone: profile?.mobileNumber || '',
+
+            location:
+              `${profile?.city || ''}, ${profile?.country || ''}`
+                .replace(/^,\s*|,\s*$/g, ''),
+
+            skills: profile?.skills || []
+          }
+        };
+      })
+    );
+
+    res.json({
+      success: true,
+      data: formattedInvites
+    });
+
+  } catch (error) {
+    console.error('Accepted Invites Error:', error);
+
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+router.get('/invitations/rejected', async (req, res) => {
+  try {
+    const rejectedInvites = await TeamInvite.find({
+      member: req.user.id,
+      status: 'rejected'
+    }).populate('owner', 'name email avatar');
+
+    const formattedInvites = await Promise.all(
+      rejectedInvites.map(async (invite) => {
+
+        const profile = await UserProfile.findOne({
+          userId: invite.owner._id
+        });
+
+        return {
+          _id: invite._id,
+          status: invite.status,
+          createdAt: invite.createdAt,
+
+          invitedBy: {
+            _id: invite.owner._id,
+            name: invite.owner?.name || '',
+            email: invite.owner?.email || '',
+            avatar: invite.owner?.avatar || '',
+
+            phone: profile?.mobileNumber || '',
+
+            location:
+              `${profile?.city || ''}, ${profile?.country || ''}`
+                .replace(/^,\s*|,\s*$/g, ''),
+
+            skills: profile?.skills || []
+          }
+        };
+      })
+    );
+
+    res.json({
+      success: true,
+      data: formattedInvites
+    });
+
+  } catch (error) {
+    console.error('Rejected Invites Error:', error);
+
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
   }
 });
 
@@ -361,18 +602,59 @@ router.post('/invitations/:inviteId/accept', [
 ], async (req, res) => {
   try {
     const invite = await TeamInvite.findById(req.params.inviteId);
-    if (!invite) return res.status(404).json({ success: false, message: 'Invite not found' });
+
+    if (!invite) {
+      return res.status(404).json({
+        success: false,
+        message: 'Invite not found'
+      });
+    }
+
+    // Check authorization
     if (invite.member.toString() !== req.user.id) {
-      return res.status(403).json({ success: false, message: 'Not authorized' });
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized'
+      });
     }
+
+    // Check if already processed
     if (invite.status !== 'pending') {
-      return res.status(400).json({ success: false, message: 'Invite already processed' });
+      return res.status(400).json({
+        success: false,
+        message: 'Invite already processed'
+      });
     }
+
+    // Accept current invite
     invite.status = 'accepted';
     await invite.save();
-    res.json({ success: true, message: 'Invite accepted' });
+
+    // Create reverse relation so both users can see each other
+    const reverseInvite = await TeamInvite.findOne({
+      owner: req.user.id,
+      member: invite.owner
+    });
+
+    if (!reverseInvite) {
+    
+    } else {
+      reverseInvite.status = 'accepted';
+      await reverseInvite.save();
+    }
+
+    res.json({
+      success: true,
+      message: 'Invite accepted successfully'
+    });
+
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Accept Invite Error:', error);
+
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
   }
 });
 

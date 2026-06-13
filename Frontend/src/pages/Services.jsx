@@ -156,7 +156,7 @@ export default function Services() {
     setError(null);
     try {
       // status=active ensures only published services show
-      const res = await api.get('/services?status=active&limit=50');
+      const res = await api.get('/services/public?status=active&limit=50');
       if (res.data.success) {
         setServices(res.data.data.services || []);
       } else {

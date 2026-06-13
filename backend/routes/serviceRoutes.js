@@ -1,7 +1,9 @@
 const express = require('express');
-const router = express.Router();
+const router  = express.Router();
+
 const {
   getAllServices,
+  getPublicServices,
   getServiceById,
   createService,
   updateService,
@@ -9,34 +11,37 @@ const {
   toggleServiceStatus,
 } = require('../controllers/serviceController');
 
-// ── Middleware (adjust import path to match your project) ──
-// If your project uses a different auth middleware name/path, update these imports.
-const { protect } = require('../middleware/auth'); // adjust path as needed
+const { protect } = require('../middleware/auth');
 
-// ─────────────────────────────────────────────
-// PUBLIC ROUTES
-// ─────────────────────────────────────────────
+// ──────────────────────────────────────────────────────────
+// PUBLIC ROUTES — login की जरूरत नहीं
+// Homepage, Services Page, Marketplace के लिए
+// ──────────────────────────────────────────────────────────
 
-// GET /api/services  – list all active services (or filtered)
-router.get('/', getAllServices);
+// GET /api/services/public — सभी active services (public website)
+router.get('/public', getPublicServices);
 
-// GET /api/services/:id  – single service
+// GET /api/services/:id — single service detail page
 router.get('/:id', getServiceById);
 
-// ─────────────────────────────────────────────
-// PROTECTED ROUTES (require login)
-// ─────────────────────────────────────────────
+// ──────────────────────────────────────────────────────────
+// PROTECTED ROUTES — login जरूरी है
+// Dashboard के लिए — हर user सिर्फ अपना data देखे
+// ──────────────────────────────────────────────────────────
 
-// POST /api/services  – create new service
+// GET /api/services — dashboard: अपनी services
+router.get('/', protect, getAllServices);
+
+// POST /api/services — नई service बनाएं
 router.post('/', protect, createService);
 
-// PUT /api/services/:id  – update service
+// PUT /api/services/:id — service update करें (ownership check controller में)
 router.put('/:id', protect, updateService);
 
-// DELETE /api/services/:id  – delete service
+// DELETE /api/services/:id — service delete करें (ownership check controller में)
 router.delete('/:id', protect, deleteService);
 
-// PATCH /api/services/:id/status  – toggle active/inactive
+// PATCH /api/services/:id/status — toggle active/inactive (ownership check controller में)
 router.patch('/:id/status', protect, toggleServiceStatus);
 
 module.exports = router;

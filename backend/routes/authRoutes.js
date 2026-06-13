@@ -4,6 +4,7 @@ const { body } = require('express-validator');
 const rateLimit = require('express-rate-limit');
 const multer = require('multer');
 const path = require('path');
+const passport = require('passport');
 
 // Import controllers
 const {
@@ -22,7 +23,10 @@ const {
   getAllUsers,
   getUserById,
   updateUser,
-  deleteUser
+  deleteUser,
+  sendResetOtp,
+  verifyResetOtp,
+  updatePasswordWithOtp
 } = require('../controllers/authController');
 
 // Import middleware
@@ -330,6 +334,36 @@ router.post(
   login
 );
 
+// Google Login
+router.get(
+  '/google/callback',
+  passport.authenticate('google', {
+    session: false,
+    failureRedirect: 'http://localhost:5173/login'
+  }),
+  async (req, res) => {
+    try {
+
+      if (req.user.accountNotFound) {
+        return res.redirect(
+          `${process.env.CLIENT_URL}/auth?googleError=account-not-found`
+        );
+      }
+
+      const token = req.user.token;
+
+      res.redirect(
+        `${process.env.CLIENT_URL}/google-success?token=${token}`
+      );
+
+    } catch (err) {
+      res.redirect(
+        'http://localhost:5173/login'
+      );
+    }
+  }
+);
+
 /**
  * @route   POST /api/auth/refresh-token
  * @desc    Refresh access token
@@ -351,6 +385,23 @@ router.post(
   passwordResetLimiter,
   forgotPasswordValidation,
   forgotPassword
+);
+
+
+router.post(
+ '/send-reset-otp',
+ passwordResetLimiter,
+ sendResetOtp
+);
+
+router.post(
+ '/verify-reset-otp',
+ verifyResetOtp
+);
+
+router.post(
+ '/update-password-with-otp',
+ updatePasswordWithOtp
 );
 
 /**

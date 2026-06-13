@@ -19,6 +19,7 @@ const hpp = require('hpp');
 const cookieParser = require('cookie-parser');
 const http = require('http');
 const socketIo = require('socket.io');
+const passport = require("./config/passport");
 
 // Load environment variables
 dotenv.config({ path: path.join(__dirname, '.env') });
@@ -36,11 +37,14 @@ const profileRoutes = require('./routes/profileRoutes');
 const userRoutes = require("./routes/userRoutes");
 const postRoutes = require("./routes/postRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
+const collaborationRoutes = require('./routes/collaborationRoutes');
 const contactRoutes = require('./routes/contactRoutes');
 const contactNotificationRoutes = require('./routes/contactNotificationRoutes');
 const onboardingRoutes = require('./routes/onboardingRoutes');
 const whatsappRoutes = require("./routes/whatsapp.routes");
 const serviceRoutes = require('./routes/serviceRoutes');
+const freelancerProfileRoutes = require('./routes/freelancerProfile.routes');
+
 
 
 
@@ -140,36 +144,36 @@ io.on("connection", (socket) => {
   });
 
   // ===========================================
-// TYPING INDICATOR
-// ===========================================
+  // TYPING INDICATOR
+  // ===========================================
 
-socket.on("typing", ({ to }) => {
+  socket.on("typing", ({ to }) => {
 
-  const receiverSocketId = onlineUsers.get(to);
+    const receiverSocketId = onlineUsers.get(to);
 
-  if (receiverSocketId) {
+    if (receiverSocketId) {
 
-    io.to(receiverSocketId).emit("userTyping", {
-      from: socket.userId
-    });
+      io.to(receiverSocketId).emit("userTyping", {
+        from: socket.userId
+      });
 
-  }
+    }
 
-});
+  });
 
-socket.on("stopTyping", ({ to }) => {
+  socket.on("stopTyping", ({ to }) => {
 
-  const receiverSocketId = onlineUsers.get(to);
+    const receiverSocketId = onlineUsers.get(to);
 
-  if (receiverSocketId) {
+    if (receiverSocketId) {
 
-    io.to(receiverSocketId).emit("userStopTyping", {
-      from: socket.userId
-    });
+      io.to(receiverSocketId).emit("userStopTyping", {
+        from: socket.userId
+      });
 
-  }
+    }
 
-});
+  });
 
 
   socket.on("disconnect", () => {
@@ -208,12 +212,12 @@ app.use(helmet({
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", "data:", "https:"],
       scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-  connectSrc: [
-  "'self'",
-  process.env.FRONTEND_URL,
-  "https://nexus-v40l.onrender.com",
-  "wss://nexus-v40l.onrender.com"
-],
+      connectSrc: [
+        "'self'",
+        process.env.FRONTEND_URL,
+        "https://nexus-v40l.onrender.com",
+        "wss://nexus-v40l.onrender.com"
+      ],
     },
   },
   crossOriginEmbedderPolicy: false,
@@ -222,10 +226,10 @@ app.use(helmet({
 
 
 app.use(cors({
- origin: [
-  "http://localhost:5173",
-  "https://nexus-beryl-five.vercel.app"
-],
+  origin: [
+    "http://localhost:5173",
+    "https://nexus-beryl-five.vercel.app"
+  ],
   credentials: true
 }));
 
@@ -262,7 +266,7 @@ app.use(cors({
 // Rate limiting
 const limiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW) || 15 * 60 * 1000, // 15 minutes
-   max: parseInt(process.env.RATE_LIMIT_MAX) || 1000,// Limit each IP to 100 requests per windowMs
+  max: parseInt(process.env.RATE_LIMIT_MAX) || 1000,// Limit each IP to 100 requests per windowMs
   message: {
     success: false,
     message: 'Too many requests from this IP, please try again later.'
@@ -283,8 +287,9 @@ app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // THEN routes
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/collaborations', collaborationRoutes);
 app.use('/api/contact', contactRoutes);
-app.use('/api/contact-notifications', contactNotificationRoutes); 
+app.use('/api/contact-notifications', contactNotificationRoutes);
 
 // ===========================================
 // GENERAL MIDDLEWARE
@@ -296,6 +301,7 @@ app.use('/api/contact-notifications', contactNotificationRoutes);
 
 // Cookie parser
 app.use(cookieParser());
+app.use(passport.initialize());
 
 // Compression middleware
 app.use(compression());
@@ -336,6 +342,12 @@ app.use('/api/posts', postRoutes);
 app.use("/api/whatsapp", whatsappRoutes);
 
 
+app.use(
+  '/api/freelancer-profile',
+  freelancerProfileRoutes
+);
+
+
 
 app.use(mongoSanitize());
 app.use(xss());
@@ -348,17 +360,17 @@ app.use('/api/user', userRoutes);
 // Request logger
 app.use((req, res, next) => {
   const start = Date.now();
-  
+
   // Log after response
   res.on('finish', () => {
     const duration = Date.now() - start;
     const logLevel = res.statusCode >= 400 ? 'warn' : 'info';
-    
+
     if (process.env.NODE_ENV === 'development') {
       console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl} ${res.statusCode} - ${duration}ms`);
     }
   });
-  
+
   next();
 });
 
@@ -477,7 +489,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Serve frontend in production
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, '../frontend/dist')));
-  
+
   app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/dist', 'index.html'));
   });

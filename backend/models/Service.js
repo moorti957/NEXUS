@@ -2,6 +2,14 @@ const mongoose = require('mongoose');
 
 const ServiceSchema = new mongoose.Schema(
   {
+    // ✅ FIX 1: createdBy को required किया — यही ownership का आधार है
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: [true, 'Service owner is required'],
+      index: true,                    // fast filter के लिए
+    },
+
     title: {
       type: String,
       required: [true, 'Service title is required'],
@@ -18,6 +26,7 @@ const ServiceSchema = new mongoose.Schema(
       type: String,
       trim: true,
       maxlength: [2000, 'Long description cannot exceed 2000 characters'],
+      default: '',
     },
     category: {
       type: String,
@@ -65,29 +74,27 @@ const ServiceSchema = new mongoose.Schema(
     iconType: {
       type: String,
       default: 'code',
-      enum: ['code', 'design', 'chart', 'brand', 'mobile', 'consulting', 'star', 'rocket', 'shield', 'globe'],
+      enum: [
+        'code', 'design', 'chart', 'brand',
+        'mobile', 'consulting', 'star', 'rocket', 'shield', 'globe',
+      ],
     },
     status: {
       type: String,
       enum: ['active', 'inactive', 'draft'],
       default: 'active',
     },
-    createdBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-    },
     order: {
       type: Number,
       default: 0,
     },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
-// Index for faster queries
-ServiceSchema.index({ category: 1, status: 1 });
+// ✅ FIX 2: Compound indexes — dashboard और public दोनों queries fast होंगी
+ServiceSchema.index({ createdBy: 1, status: 1 });   // dashboard filter
+ServiceSchema.index({ status: 1, category: 1 });    // public filter
 ServiceSchema.index({ createdAt: -1 });
 
 module.exports = mongoose.model('Service', ServiceSchema);
