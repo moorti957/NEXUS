@@ -94,8 +94,13 @@ io = socketIo(server, {
       "https://nexus-beryl-five.vercel.app",
       "https://nexus-git-main-dipanshus-projects-ad8d55d0.vercel.app"
     ],
-    methods: ["GET", "POST"],
-    credentials: true
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    credentials: true,
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "x-auth-token"
+    ]
   }
 });
 
