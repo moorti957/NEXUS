@@ -89,11 +89,11 @@ let io;
 // ===========================================
 io = socketIo(server, {
   cors: {
-   origin: [
-  "http://localhost:5173",
-  "https://nexus-beryl-five.vercel.app",
-  "https://nexus-git-main-dipanshus-projects-ad8d55d0.vercel.app"
-]
+    origin: [
+      "http://localhost:5173",
+      "https://nexus-beryl-five.vercel.app",
+      "https://nexus-git-main-dipanshus-projects-ad8d55d0.vercel.app"
+    ],
     methods: ["GET", "POST"],
     credentials: true
   }
