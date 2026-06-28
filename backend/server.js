@@ -89,10 +89,11 @@ let io;
 // ===========================================
 io = socketIo(server, {
   cors: {
-    origin: [
-      "http://localhost:5173",
-      "https://nexus-git-main-dipanshus-projects-ad8d55d0.vercel.app"
-    ],
+   origin: [
+  "http://localhost:5173",
+  "https://nexus-beryl-five.vercel.app",
+  "https://nexus-git-main-dipanshus-projects-ad8d55d0.vercel.app"
+]
     methods: ["GET", "POST"],
     credentials: true
   }
@@ -228,10 +229,15 @@ app.use(helmet({
 app.use(cors({
   origin: [
     "http://localhost:5173",
+    "https://nexus-beryl-five.vercel.app",
     "https://nexus-git-main-dipanshus-projects-ad8d55d0.vercel.app"
   ],
-  credentials: true
+  credentials: true,
+  methods: ["GET","POST","PUT","PATCH","DELETE","OPTIONS"],
+  allowedHeaders: ["Content-Type","Authorization"]
 }));
+
+app.options("*", cors());
 
 // const allowedOrigins = process.env.FRONTEND_URL
 //   ? process.env.FRONTEND_URL.split(',')
