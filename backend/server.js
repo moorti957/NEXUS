@@ -43,7 +43,7 @@ const contactNotificationRoutes = require('./routes/contactNotificationRoutes');
 const onboardingRoutes = require('./routes/onboardingRoutes');
 const whatsappRoutes = require("./routes/whatsapp.routes");
 const serviceRoutes = require('./routes/serviceRoutes');
-const freelancerProfileRoutes = require('./routes/freelancerProfile.routes');
+const freelancerProfileRoutes = require('./routes/freelancerProfile.Routes');
 
 
 
