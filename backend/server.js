@@ -233,10 +233,13 @@ app.use(cors({
     "https://nexus-git-main-dipanshus-projects-ad8d55d0.vercel.app"
   ],
   credentials: true,
-  methods: ["GET","POST","PUT","PATCH","DELETE","OPTIONS"],
-  allowedHeaders: ["Content-Type","Authorization"]
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "x-auth-token"
+  ]
 }));
-
 app.options("*", cors());
 
 // const allowedOrigins = process.env.FRONTEND_URL
